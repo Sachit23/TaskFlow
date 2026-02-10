@@ -1,0 +1,12 @@
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Java / Spring Boot
+target/
+*.log
+
+# OS junk
+Thumbs.db
