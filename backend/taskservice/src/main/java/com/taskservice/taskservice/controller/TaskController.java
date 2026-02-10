@@ -23,7 +23,7 @@ public class TaskController {
         this.taskService = taskService;
     }
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<TaskResponse> createTask(
             @Valid @RequestBody CreateTaskRequest request) {
 

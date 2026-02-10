@@ -14,10 +14,8 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -65,7 +63,7 @@ class TaskControllerTest {
         when(taskService.createTask(any(CreateTaskRequest.class)))
                 .thenReturn(response);
 
-        mockMvc.perform(post("/api/tasks")
+        mockMvc.perform(post("/api/tasks/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
