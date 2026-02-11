@@ -24,4 +24,8 @@ public class CreateTaskRequest {
 
     @Future
     private LocalDate dueDate;
+
+    @NotNull
+    private Long assignedUserId;
+
 }

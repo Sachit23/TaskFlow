@@ -50,6 +50,9 @@ public class Task {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    private Long assignedUserId;
+
     @PrePersist
     void onCreate() {
         createdAt = LocalDateTime.now();

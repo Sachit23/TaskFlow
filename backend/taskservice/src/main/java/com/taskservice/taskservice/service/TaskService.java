@@ -2,7 +2,6 @@ package com.taskservice.taskservice.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.taskservice.taskservice.dto.CreateTaskRequest;
 import com.taskservice.taskservice.dto.TaskResponse;
 import com.taskservice.taskservice.dto.UpdateTaskRequest;
@@ -10,7 +9,6 @@ import com.taskservice.taskservice.entity.Task;
 import com.taskservice.taskservice.enums.TaskStatus;
 import com.taskservice.taskservice.exception.ResourceNotFoundException;
 import com.taskservice.taskservice.repository.TaskRepository;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,25 +18,26 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
 
-    public TaskService(TaskRepository taskRepository) {
+    private final UserClient userClient;
+
+    public TaskService(TaskRepository taskRepository, UserClient userClient) {
         this.taskRepository = taskRepository;
+        this.userClient = userClient;
     }
 
     public TaskResponse createTask(CreateTaskRequest request) {
-
+        userClient.validateUser(request.getAssignedUserId());
         Task task = new Task();
         task.setTitle(request.getTitle());
         task.setDescription(request.getDescription());
         task.setPriority(request.getPriority());
         task.setDueDate(request.getDueDate());
-
-        // business default
+        task.setAssignedUserId(request.getAssignedUserId());
         task.setStatus(TaskStatus.PENDING);
-
         Task savedTask = taskRepository.save(task);
-
         return mapToResponse(savedTask);
     }
+
 
     public TaskResponse getTaskById(Long id) {
         Task task = taskRepository.findById(id)
@@ -52,6 +51,14 @@ public class TaskService {
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
+
+    public List<TaskResponse> getTasksByUser(Long userId) {
+        return taskRepository.findByAssignedUserId(userId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
 
     public TaskResponse updateTask(Long id, UpdateTaskRequest request) {
         Task task = taskRepository.findById(id)
