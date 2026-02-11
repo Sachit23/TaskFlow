@@ -1,5 +1,6 @@
 package com.userservice.userservice.controller;
 
+import com.userservice.userservice.dto.UserResponse;
 //import com.fasterxml.jackson.databind.ObjectMapper;
 import com.userservice.userservice.entity.User;
 import com.userservice.userservice.service.UserService;
@@ -62,7 +63,7 @@ class UserControllerTest {
         loginRequest.setEmail("alice@test.com");
         loginRequest.setPassword("12345");
 
-        User loggedInUser = new User();
+        UserResponse loggedInUser = new UserResponse();
         loggedInUser.setId(1L);
         loggedInUser.setName("Alice");
         loggedInUser.setEmail("alice@test.com");
@@ -99,4 +100,41 @@ class UserControllerTest {
                 .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+     void testGetUserById_Success() throws Exception {
+        User user = new User();
+        user.setId(1L);
+        user.setName("Sachit");
+        user.setEmail("sachit@test.com");
+
+        when(userService.getUserById(1L)).thenReturn(user);
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Sachit"))
+                .andExpect(jsonPath("$.email").value("sachit@test.com"));
+    }
+    
+    @Test
+    void testGetUserById_NotFound() throws Exception {
+
+        when(userService.getUserById(1L))
+                .thenThrow(new ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/users/1")
+        )
+                .andExpect(status().isNotFound());
+    }
+
 }
