@@ -20,4 +20,5 @@ public class TaskResponse {
     private TaskPriority priority;
     private LocalDate dueDate;
     private LocalDateTime createdAt;
+    private Long assignedUserId;
 }

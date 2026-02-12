@@ -62,6 +62,7 @@ class TaskControllerTest {
         response.setStatus(TaskStatus.PENDING);
         response.setPriority(TaskPriority.HIGH);
         response.setDueDate(LocalDate.now().plusDays(1));
+        response.setAssignedUserId(1L);
         response.setCreatedAt(LocalDateTime.now());
 
         when(taskService.createTask(any(CreateTaskRequest.class)))
@@ -74,7 +75,8 @@ class TaskControllerTest {
                                   "title": "Create",
                                   "description": "Test",
                                   "priority": "HIGH",
-                                  "dueDate": "2030-01-01"
+                                  "dueDate": "2030-01-01",
+                                  "assignedUserId": 1
                                 }
                                 """))
                 .andExpect(status().isCreated())
