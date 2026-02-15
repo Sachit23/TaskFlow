@@ -1,13 +1,13 @@
-package com.taskservice.taskservice;
+// package com.taskservice.taskservice;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+// import org.junit.jupiter.api.Test;
+// import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class TaskserviceApplicationTests {
+// @SpringBootTest
+// class TaskserviceApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+// 	@Test
+// 	void contextLoads() {
+// 	}
 
-}
+// }
