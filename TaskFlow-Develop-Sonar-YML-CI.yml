@@ -33,6 +33,8 @@ jobs:
 
   - task: SonarCloudAnalyze@4
     displayName: Run Code Analysis
+    inputs:
+      jdkVersionOption: '17'
 
   - task: SonarCloudPublish@4
     displayName: Publish Quality Gate Result
