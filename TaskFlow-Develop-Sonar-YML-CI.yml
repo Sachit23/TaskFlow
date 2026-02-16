@@ -1,0 +1,53 @@
+trigger:
+  branches:
+    include:
+      - develop
+
+name: $(date:yyyyMMdd)$(rev:.r)
+
+jobs:
+- job: Build_And_Analyze
+  displayName: Build and Sonar Analysis
+  pool:
+    name: Default   # your self-hosted agent
+
+  steps:
+  - checkout: self
+
+  - task: SonarCloudPrepare@4
+    displayName: Prepare analysis on SonarCloud
+    inputs:
+      SonarQube: 71879b1d-fd8b-4239-ba02-174b05252137
+      organization: casestudy2026
+      scannerMode: 'Maven'
+      projectKey: CaseStudy2026_TaskFlow
+      projectName: CaseStudy2026_TaskFlow
+
+  - task: Maven@3
+    displayName: Maven Build
+    inputs:
+      mavenPomFile: 'backend/pom.xml'
+      goals: 'clean verify sonar:sonar'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+
+  - task: SonarCloudAnalyze@4
+    displayName: Run Code Analysis
+
+  - task: SonarCloudPublish@4
+    displayName: Publish Quality Gate Result
+
+  - task: CopyFiles@2
+    displayName: Copy JAR files
+    condition: succeededOrFailed()
+    inputs:
+      SourceFolder: $(System.DefaultWorkingDirectory)
+      Contents: '**/*.jar'
+      TargetFolder: $(Build.ArtifactStagingDirectory)
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact
+    condition: succeededOrFailed()
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)
+      ArtifactName: drop
