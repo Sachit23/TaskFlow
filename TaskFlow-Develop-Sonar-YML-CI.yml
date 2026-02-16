@@ -14,30 +14,16 @@ jobs:
   steps:
   - checkout: self
 
-  - task: SonarCloudPrepare@4
-    displayName: Prepare analysis on SonarCloud
-    inputs:
-      SonarQube: 71879b1d-fd8b-4239-ba02-174b05252137
-      organization: casestudy2026
-      scannerMode: 'Maven'
-      projectKey: CaseStudy2026_TaskFlow
-      projectName: CaseStudy2026_TaskFlow
-
   - task: Maven@3
-    displayName: Maven Build
+    displayName: Maven Build and SonarCloud Analysis
     inputs:
       mavenPomFile: 'backend/pom.xml'
       goals: 'clean verify sonar:sonar'
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
-
-  - task: SonarCloudAnalyze@4
-    displayName: Run Code Analysis
-    inputs:
-      jdkVersionOption: '17'
-
-  - task: SonarCloudPublish@4
-    displayName: Publish Quality Gate Result
+      options: '-Dsonar.login=$(SONAR_TOKEN) -Dsonar.projectKey=CaseStudy2026_TaskFlow -Dsonar.organization=casestudy2026'
+    env:
+      SONAR_TOKEN: $(SONAR_TOKEN)
 
   - task: CopyFiles@2
     displayName: Copy JAR files
