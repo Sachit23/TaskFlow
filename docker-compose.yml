@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+
+  userdb:
+    image: postgres:15
+    container_name: userdb
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+
+  taskdb:
+    image: postgres:15
+    container_name: taskdb
+    environment:
+      POSTGRES_DB: tasks
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+
+  userservice:
+    build:
+      context: ./backend/userservice
+      dockerfile: Dockerfile
+    container_name: userservice
+    depends_on:
+      - userdb
+    ports:
+      - "8080:8080"
+
+  taskservice:
+    build:
+      context: ./backend/taskservice
+      dockerfile: Dockerfile
+    container_name: taskservice
+    depends_on:
+      - taskdb
+      - userservice
+    ports:
+      - "8081:8081"
