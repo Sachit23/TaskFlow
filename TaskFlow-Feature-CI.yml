@@ -1,0 +1,56 @@
+trigger:
+  branches:
+    include:
+      - develop
+      - feature/docker-integration
+
+name: ci-$(date:yyyyMMdd)$(rev:.r)
+
+variables:
+  imageTag: $(Build.BuildId)
+
+jobs:
+- job: Build_Test_Analyze_And_Push
+  displayName: CI - Build, Sonar, Docker Push
+  pool:
+    name: Default
+
+  steps:
+  - checkout: self
+
+  # Maven + Sonar
+  - task: Maven@3
+    displayName: Maven Build and SonarCloud Analysis
+    inputs:
+      mavenPomFile: 'backend/pom.xml'
+      goals: 'clean verify sonar:sonar'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      options: >
+        -Dsonar.login=$(SONAR_TOKEN)
+        -Dsonar.projectKey=CaseStudy2026_TaskFlow
+        -Dsonar.organization=casestudy2026
+    env:
+      SONAR_TOKEN: $(SONAR_TOKEN)
+
+  # Build TaskService Image
+  - task: Docker@2
+    displayName: Build and Push TaskService
+    inputs:
+      containerRegistry: 'ACRConnection'
+      repository: 'taskservice'
+      command: 'buildAndPush'
+      Dockerfile: 'backend/taskservice/Dockerfile'
+      tags: |
+        $(imageTag)
+
+  # Build UserService Image
+  - task: Docker@2
+    displayName: Build and Push UserService
+    inputs:
+      containerRegistry: 'ACRConnection'
+      repository: 'userservice'
+      command: 'buildAndPush'
+      Dockerfile: 'backend/userservice/Dockerfile'
+      tags: |
+        $(imageTag)
