@@ -90,6 +90,7 @@ public class TaskService {
         response.setPriority(task.getPriority());
         response.setDueDate(task.getDueDate());
         response.setCreatedAt(task.getCreatedAt());
+        response.setAssignedUserId(task.getAssignedUserId());
         return response;
     }
 }

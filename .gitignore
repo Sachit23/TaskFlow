@@ -10,3 +10,6 @@ target/
 
 # OS junk
 Thumbs.db
+
+# environment variables
+.env
