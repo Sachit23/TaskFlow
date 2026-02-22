@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Source code (not needed in single stage)
+src/
+.mvn/
+mvnw
+mvnw.cmd
+
+# Logs
+*.log
+logs/
+
+# Tests
+test-results/
+
+# Docs
+README.md
+HELP.md
+*.md
+
+# OS
+Thumbs.db

@@ -7,26 +7,35 @@ services:
     container_name: userdb
     environment:
       POSTGRES_DB: users
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${USER_DB_USERNAME}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
     ports:
       - "5433:5432"
+    volumes:
+      - userdb_data:/var/lib/postgresql/data
 
   taskdb:
     image: postgres:15
     container_name: taskdb
     environment:
       POSTGRES_DB: tasks
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${TASK_DB_USERNAME}
+      POSTGRES_PASSWORD: ${TASK_DB_PASSWORD}
     ports:
       - "5434:5432"
+    volumes:
+      - taskdb_data:/var/lib/postgresql/data
 
   userservice:
     build:
       context: ./backend/userservice
       dockerfile: Dockerfile
     container_name: userservice
+    env_file: .env
+    environment:
+      SPRING_DATASOURCE_URL: ${USER_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${USER_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${USER_DB_PASSWORD}
     depends_on:
       - userdb
     ports:
@@ -37,8 +46,18 @@ services:
       context: ./backend/taskservice
       dockerfile: Dockerfile
     container_name: taskservice
+    env_file: .env
+    environment:
+      SPRING_DATASOURCE_URL: ${TASK_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${TASK_DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${TASK_DB_PASSWORD}
+      USERSERVICE_URL: ${USERSERVICE_URL}
     depends_on:
       - taskdb
       - userservice
     ports:
       - "8081:8081"
+
+volumes:
+  userdb_data:
+  taskdb_data:

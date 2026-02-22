@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts (will use compiled JAR only)
+src/
+.mvn/
+mvnw
+mvnw.cmd
+
+# Documentation
+README.md
+HELP.md
+*.md
+
+# Logs
+*.log
+logs/
+
+# Tests
+test-results/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Maven
+pom.xml.bak
+*.flattened-pom.xml
