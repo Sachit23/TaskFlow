@@ -12,12 +12,14 @@
     <modules>
         <module>taskservice</module>
         <module>userservice</module>
+        <module>apigateway</module>
     </modules>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.2</version>
+        <!-- <version>4.0.2</version> -->
+        <version>3.2.5</version>
         <relativePath/>
     </parent>
 
@@ -30,6 +32,18 @@
         <jacoco.maven.plugin.version>0.8.11</jacoco.maven.plugin.version>
         <surefireArgLine></surefireArgLine>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>2023.0.1</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <pluginManagement>

@@ -26,5 +26,9 @@ jobs:
       docker build -t userservice:latest backend/userservice
     displayName: Build UserService Image
 
+  - script: |
+      docker build -t apigateway:latest backend/apigateway
+    displayName: Build API Gateway Image
+
   - script: docker images
     displayName: List Docker Images

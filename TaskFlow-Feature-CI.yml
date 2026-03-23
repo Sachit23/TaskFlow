@@ -54,3 +54,14 @@ jobs:
       Dockerfile: 'backend/userservice/Dockerfile'
       tags: |
         $(imageTag)
+
+  # Build API Gateway Image
+  - task: Docker@2
+    displayName: Build and Push API Gateway
+    inputs:
+      containerRegistry: 'ACRConnection'
+      repository: 'apigateway'
+      command: 'buildAndPush'
+      Dockerfile: 'backend/apigateway/Dockerfile'
+      tags: |
+        $(imageTag)

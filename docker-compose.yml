@@ -58,6 +58,21 @@ services:
     ports:
       - "8081:8081"
 
+  apigateway:
+    build:
+      context: ./backend/apigateway
+      dockerfile: Dockerfile
+    container_name: apigateway
+    env_file: .env
+    environment:
+      USERSERVICE_URL: ${USERSERVICE_URL}
+      TASKSERVICE_URL: ${TASKSERVICE_URL}
+    depends_on:
+      - userservice
+      - taskservice
+    ports:
+      - "8090:8090"
+
 volumes:
   userdb_data:
   taskdb_data:
