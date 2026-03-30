@@ -1,0 +1,72 @@
+trigger:
+  branches:
+    include:
+      - develop
+      - feature/docker-integration
+
+name: ci-$(date:yyyyMMdd)$(rev:.r)
+
+variables:
+  imageTag: $(Build.BuildId)
+
+jobs:
+- job: Build_Test_Analyze_And_Push
+  displayName: CI - Build, Sonar, Docker Push
+  pool:
+    name: Default
+
+  steps:
+  - checkout: self
+
+  #Maven + Sonar
+  - task: Maven@3
+    displayName: Maven Build and SonarCloud Analysis
+    inputs:
+      mavenPomFile: 'backend/pom.xml'
+      goals: 'clean verify sonar:sonar'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      options: >
+        -Dsonar.login=$(SONAR_TOKEN)
+        -Dsonar.projectKey=CaseStudy2026_TaskFlow
+        -Dsonar.organization=casestudy2026
+    env:
+      SONAR_TOKEN: $(SONAR_TOKEN)
+
+  #Login to GHCR
+  - script: |
+      echo $(GITHUB_TOKEN) | docker login ghcr.io -u $(GITHUB_USERNAME) --password-stdin
+    displayName: Login to GHCR
+
+  #Build & Push TaskService
+  - script: |
+      docker build \
+        -t ghcr.io/$(GITHUB_USERNAME)/taskservice:$(imageTag) \
+        -t ghcr.io/$(GITHUB_USERNAME)/taskservice:latest \
+        backend/taskservice
+
+      docker push ghcr.io/$(GITHUB_USERNAME)/taskservice:$(imageTag)
+      docker push ghcr.io/$(GITHUB_USERNAME)/taskservice:latest
+    displayName: Build & Push TaskService
+
+  #Build & Push UserService
+  - script: |
+      docker build \
+        -t ghcr.io/$(GITHUB_USERNAME)/userservice:$(imageTag) \
+        -t ghcr.io/$(GITHUB_USERNAME)/userservice:latest \
+        backend/userservice
+
+      docker push ghcr.io/$(GITHUB_USERNAME)/userservice:$(imageTag)
+      docker push ghcr.io/$(GITHUB_USERNAME)/userservice:latest
+    displayName: Build & Push UserService
+
+  #Build & Push API Gateway
+  - script: |
+      docker build \
+        -t ghcr.io/$(GITHUB_USERNAME)/apigateway:$(imageTag) \
+        -t ghcr.io/$(GITHUB_USERNAME)/apigateway:latest \
+        backend/apigateway
+
+      docker push ghcr.io/$(GITHUB_USERNAME)/apigateway:$(imageTag)
+      docker push ghcr.io/$(GITHUB_USERNAME)/apigateway:latest
+    displayName: Build & Push API Gateway

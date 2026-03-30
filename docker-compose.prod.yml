@@ -24,7 +24,7 @@ services:
 
   userservice:
     build:
-      image: casestudy2026acr.azurecr.io/userservice:44
+      image: casestudy2026acr.azurecr.io/userservice:49
     container_name: userservice
     env_file: .env
     environment:
@@ -38,7 +38,7 @@ services:
 
   taskservice:
     build:
-      image: casestudy2026acr.azurecr.io/taskservice:44
+      image: casestudy2026acr.azurecr.io/taskservice:49
     container_name: taskservice
     env_file: .env
     environment:
@@ -54,7 +54,7 @@ services:
 
   apigateway:
     build:
-      image: casestudy2026acr.azurecr.io/apigateway:44
+      image: casestudy2026acr.azurecr.io/apigateway:49
     container_name: apigateway
     env_file: .env
     environment:
