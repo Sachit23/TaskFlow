@@ -24,7 +24,8 @@ jobs:
   - task: Maven@3
     displayName: Maven Build and SonarCloud Analysis
     inputs:
-      mavenPomFile: 'pom.xml'
+      mavenPomFile: 'backend/pom.xml'
+      workingDirectory: 'backend'
       goals: 'clean install -U sonar:sonar'
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
