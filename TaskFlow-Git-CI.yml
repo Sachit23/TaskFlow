@@ -7,7 +7,7 @@ name: ci-$(date:yyyyMMdd)$(rev:.r)
 
 variables:
   - group: GHCR
-
+  
   - name: imageTag
     value: $(Build.BuildId)
 
@@ -15,33 +15,17 @@ jobs:
 - job: Build_Test_Analyze_And_Push
   displayName: CI - Build, Sonar, Docker Push
   pool:
-    name: Default
+    vmImage: 'ubuntu-latest'
 
   steps:
   - checkout: self
 
-  # 🔥 Ensure Java 17 is used
-  - task: JavaToolInstaller@0
-    displayName: Set Java 17
-    inputs:
-      versionSpec: '17'
-      jdkArchitectureOption: 'x64'
-      jdkSourceOption: 'PreInstalled'
-
-  # ✅ Verify Java version (debug)
-  - script: |
-      java -version
-    displayName: Verify Java Version
-
-  # ✅ Maven + SonarCloud Analysis
+  # Maven + Sonar
   - task: Maven@3
     displayName: Maven Build and SonarCloud Analysis
     inputs:
       mavenPomFile: 'backend/pom.xml'
       goals: 'clean verify sonar:sonar'
-      javaHomeOption: 'JDKVersion'
-      jdkVersionOption: '1.17'
-      jdkArchitectureOption: 'x64'
       publishJUnitResults: true
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       options: >
@@ -53,7 +37,7 @@ jobs:
     env:
       SONAR_TOKEN: $(SONAR_TOKEN)
 
-  # 🔐 Login to GitHub Container Registry (GHCR)
+  # Login to GHCR
   - script: |
       echo $GH_TOKEN | docker login ghcr.io -u $GH_USER --password-stdin
     displayName: Login to GHCR
@@ -61,7 +45,7 @@ jobs:
       GH_TOKEN: $(GITHUB_TOKEN)
       GH_USER: $(GITHUB_USERNAME)
 
-  # 🐳 Build & Push TaskService
+  # Build & Push TaskService
   - script: |
       docker build \
         -t ghcr.io/$(GITHUB_USERNAME)/taskservice:$(imageTag) \
@@ -72,7 +56,7 @@ jobs:
       docker push ghcr.io/$(GITHUB_USERNAME)/taskservice:latest
     displayName: Build & Push TaskService
 
-  # 🐳 Build & Push UserService
+  # Build & Push UserService
   - script: |
       docker build \
         -t ghcr.io/$(GITHUB_USERNAME)/userservice:$(imageTag) \
@@ -83,7 +67,7 @@ jobs:
       docker push ghcr.io/$(GITHUB_USERNAME)/userservice:latest
     displayName: Build & Push UserService
 
-  # 🐳 Build & Push API Gateway
+  # Build & Push API Gateway
   - script: |
       docker build \
         -t ghcr.io/$(GITHUB_USERNAME)/apigateway:$(imageTag) \
