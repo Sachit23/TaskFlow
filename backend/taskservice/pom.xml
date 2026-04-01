@@ -6,6 +6,7 @@
     	<groupId>com.taskflow</groupId>
     	<artifactId>taskflow-parent</artifactId>
     	<version>1.0.0</version>
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<!--<groupId>com.taskservice</groupId>-->
 	<artifactId>taskservice</artifactId>
