@@ -36,12 +36,12 @@ class TaskControllerTest {
     @Mock
     private TaskService taskService;
 
-    @InjectMocks
-    private TaskController taskController;
+        @InjectMocks
+        private TaskController taskController;
 
-    private tools.jackson.databind.ObjectMapper objectMapper;
+        private com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-    @BeforeEach
+        @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
@@ -49,7 +49,7 @@ class TaskControllerTest {
                 .standaloneSetup(taskController)
                 .build();
         
-        objectMapper = new tools.jackson.databind.ObjectMapper();
+                objectMapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
     }
 
     @Test
