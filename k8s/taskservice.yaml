@@ -1,49 +1,131 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: taskservice-config
-data:
-  TASK_DB_URL: jdbc:postgresql://taskdb:5432/tasks
-  TASK_DB_USERNAME: postgres
-  TASK_DB_PASSWORD: postgres
-  USERSERVICE_URL: http://userservice:8080
-  SPRING_JPA_SHOW_SQL: "true"
-  SPRING_JPA_HIBERNATE_DDL_AUTO: update
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: taskservice
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: taskservice
-  template:
-    metadata:
-      labels:
-        app: taskservice
-    spec:
-      containers:
-        - name: taskservice
-          image: task-service:1.0
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8081
-          envFrom:
-            - configMapRef:
-                name: taskservice-config
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: taskservice
-spec:
-  selector:
-    app: taskservice
-  ports:
-    - port: 8081
-      targetPort: 8081
-  type: ClusterIP
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "taskservice"
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "taskservice"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "taskservice"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "taskservice",
+                "image": "taskflow/taskservice:local",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "containerPort": 8081
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "TASK_DB_URL",
+                    "value": "jdbc:postgresql://taskdb:5432/tasks"
+                  },
+                  {
+                    "name": "TASK_DB_USERNAME",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "taskflow-db",
+                        "key": "TASK_DB_USERNAME"
+                      }
+                    }
+                  },
+                  {
+                    "name": "TASK_DB_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "taskflow-db",
+                        "key": "TASK_DB_PASSWORD"
+                      }
+                    }
+                  },
+                  {
+                    "name": "USERSERVICE_URL",
+                    "value": "http://userservice:8080"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "256Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "768Mi"
+                  }
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": 8081
+                  },
+                  "failureThreshold": 60,
+                  "periodSeconds": 5
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": 8081
+                  },
+                  "periodSeconds": 10
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": 8081
+                  },
+                  "periodSeconds": 20
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "runAsNonRoot": true,
+                  "runAsUser": 10001
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "taskservice"
+      },
+      "spec": {
+        "selector": {
+          "app": "taskservice"
+        },
+        "ports": [
+          {
+            "port": 8081,
+            "targetPort": 8081
+          }
+        ],
+        "type": "ClusterIP"
+      }
+    }
+  ]
+}

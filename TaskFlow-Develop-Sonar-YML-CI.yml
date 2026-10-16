@@ -1,41 +1,5 @@
-trigger:
-  branches:
-    include:
-      - develop
-
-name: $(date:yyyyMMdd)$(rev:.r)
-
-jobs:
-- job: Build_And_Analyze
-  displayName: Build and Sonar Analysis
-  pool:
-    name: Default   # your self-hosted agent
-
-  steps:
-  - checkout: self
-
-  - task: Maven@3
-    displayName: Maven Build and SonarCloud Analysis
-    inputs:
-      mavenPomFile: 'backend/pom.xml'
-      goals: 'clean verify sonar:sonar'
-      publishJUnitResults: true
-      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      options: '-Dsonar.login=$(SONAR_TOKEN) -Dsonar.projectKey=CaseStudy2026_TaskFlow -Dsonar.organization=casestudy2026'
-    env:
-      SONAR_TOKEN: $(SONAR_TOKEN)
-
-  - task: CopyFiles@2
-    displayName: Copy JAR files
-    condition: succeededOrFailed()
-    inputs:
-      SourceFolder: $(System.DefaultWorkingDirectory)
-      Contents: '**/*.jar'
-      TargetFolder: $(Build.ArtifactStagingDirectory)
-
-  - task: PublishBuildArtifacts@1
-    displayName: Publish Artifact
-    condition: succeededOrFailed()
-    inputs:
-      PathtoPublish: $(Build.ArtifactStagingDirectory)
-      ArtifactName: drop
+# Compatibility entry point. Configure a single Azure DevOps pipeline using azure-pipelines.yml.
+trigger: none
+pr: none
+extends:
+ template: azure-pipelines.yml

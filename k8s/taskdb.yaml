@@ -1,45 +1,129 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: taskdb-config
-data:
-  POSTGRES_DB: tasks
-  POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: postgres
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: taskdb
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: taskdb
-  template:
-    metadata:
-      labels:
-        app: taskdb
-    spec:
-      containers:
-        - name: taskdb
-          image: postgres:15
-          ports:
-            - containerPort: 5432
-          envFrom:
-            - configMapRef:
-                name: taskdb-config
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: taskdb
-spec:
-  selector:
-    app: taskdb
-  ports:
-    - port: 5432
-      targetPort: 5432
-  type: ClusterIP
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "taskdb"
+      },
+      "spec": {
+        "selector": {
+          "app": "taskdb"
+        },
+        "ports": [
+          {
+            "port": 5432,
+            "targetPort": 5432
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "StatefulSet",
+      "metadata": {
+        "name": "taskdb"
+      },
+      "spec": {
+        "replicas": 1,
+        "serviceName": "taskdb",
+        "selector": {
+          "matchLabels": {
+            "app": "taskdb"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "taskdb"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "taskdb",
+                "image": "postgres:17-alpine",
+                "ports": [
+                  {
+                    "containerPort": 5432
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "POSTGRES_DB",
+                    "value": "tasks"
+                  },
+                  {
+                    "name": "POSTGRES_USER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "taskflow-db",
+                        "key": "TASK_DB_USERNAME"
+                      }
+                    }
+                  },
+                  {
+                    "name": "POSTGRES_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "taskflow-db",
+                        "key": "TASK_DB_PASSWORD"
+                      }
+                    }
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "data",
+                    "mountPath": "/var/lib/postgresql/data",
+                    "subPath": "postgres"
+                  }
+                ],
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "sh",
+                      "-c",
+                      "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""
+                    ]
+                  },
+                  "initialDelaySeconds": 5,
+                  "periodSeconds": 5
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "512Mi"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "volumeClaimTemplates": [
+          {
+            "metadata": {
+              "name": "data"
+            },
+            "spec": {
+              "accessModes": [
+                "ReadWriteOnce"
+              ],
+              "resources": {
+                "requests": {
+                  "storage": "8Gi"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

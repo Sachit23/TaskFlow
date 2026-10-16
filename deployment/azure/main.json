@@ -1,0 +1,221 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "sshPublicKey": {
+      "type": "string",
+      "metadata": {
+        "description": "Public SSH key, never the private key."
+      }
+    },
+    "sshAllowedCidr": {
+      "type": "string",
+      "metadata": {
+        "description": "Your trusted public IP/32 or build agent CIDR."
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_B2s"
+    }
+  },
+  "variables": {
+    "prefix": "[concat('tf-', uniqueString(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2024-05-01",
+      "name": "[concat(variables('prefix'), '-nsg')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "HTTPS",
+            "properties": {
+              "priority": 100,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "443",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "HTTP",
+            "properties": {
+              "priority": 110,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "80",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "SSH",
+            "properties": {
+              "priority": 120,
+              "direction": "Inbound",
+              "access": "Allow",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "[parameters('sshAllowedCidr')]",
+              "destinationAddressPrefix": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2024-05-01",
+      "name": "[concat(variables('prefix'), '-vnet')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.30.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "app",
+            "properties": {
+              "addressPrefix": "10.30.0.0/24",
+              "networkSecurityGroup": {
+                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat(variables('prefix'), '-nsg'))]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', concat(variables('prefix'), '-nsg'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2024-05-01",
+      "name": "[concat(variables('prefix'), '-ip')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('prefix')]"
+        }
+      },
+      "sku": {
+        "name": "Standard"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2024-05-01",
+      "name": "[concat(variables('prefix'), '-nic')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "main",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('prefix'), '-ip'))]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', concat(variables('prefix'), '-vnet'), 'app')]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', concat(variables('prefix'), '-vnet'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('prefix'), '-ip'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2024-07-01",
+      "name": "[concat(variables('prefix'), '-vm')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('prefix')]",
+          "adminUsername": "taskflow",
+          "customData": "I2Nsb3VkLWNvbmZpZwpwYWNrYWdlX3VwZGF0ZTogdHJ1ZQpwYWNrYWdlczoKIC0gY2EtY2VydGlmaWNhdGVzCiAtIGN1cmwKcnVuY21kOgogLSBpbnN0YWxsIC1tIDA3NTUgLWQgL2V0Yy9hcHQva2V5cmluZ3MKIC0gY3VybCAtZnNTTCBodHRwczovL2Rvd25sb2FkLmRvY2tlci5jb20vbGludXgvdWJ1bnR1L2dwZyAtbyAvZXRjL2FwdC9rZXlyaW5ncy9kb2NrZXIuYXNjCiAtIGNobW9kIGErciAvZXRjL2FwdC9rZXlyaW5ncy9kb2NrZXIuYXNjCiAtIHNoIC1jICdlY2hvICJkZWIgW2FyY2g9JChkcGtnIC0tcHJpbnQtYXJjaGl0ZWN0dXJlKSBzaWduZWQtYnk9L2V0Yy9hcHQva2V5cmluZ3MvZG9ja2VyLmFzY10gaHR0cHM6Ly9kb3dubG9hZC5kb2NrZXIuY29tL2xpbnV4L3VidW50dSBub2JsZSBzdGFibGUiID4gL2V0Yy9hcHQvc291cmNlcy5saXN0LmQvZG9ja2VyLmxpc3QnCiAtIGFwdC1nZXQgdXBkYXRlCiAtIGFwdC1nZXQgaW5zdGFsbCAteSBkb2NrZXItY2UgZG9ja2VyLWNlLWNsaSBjb250YWluZXJkLmlvIGRvY2tlci1idWlsZHgtcGx1Z2luIGRvY2tlci1jb21wb3NlLXBsdWdpbgogLSBzeXN0ZW1jdGwgZW5hYmxlIC0tbm93IGRvY2tlcgogLSBpbnN0YWxsIC1kIC1tIDA3NTAgLW8gdGFza2Zsb3cgLWcgdGFza2Zsb3cgL29wdC90YXNrZmxvdwo=",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "provisionVMAgent": true,
+            "ssh": {
+              "publicKeys": [
+                {
+                  "path": "/home/taskflow/.ssh/authorized_keys",
+                  "keyData": "[parameters('sshPublicKey')]"
+                }
+              ]
+            }
+          }
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "Canonical",
+            "offer": "ubuntu-24_04-lts",
+            "sku": "server",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "diskSizeGB": 64,
+            "managedDisk": {
+              "storageAccountType": "StandardSSD_LRS"
+            },
+            "deleteOption": "Delete"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('prefix'), '-nic'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('prefix'), '-nic'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "hostname": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', concat(variables('prefix'), '-ip')), '2024-05-01').dnsSettings.fqdn]"
+    },
+    "publicIp": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', concat(variables('prefix'), '-ip')), '2024-05-01').ipAddress]"
+    },
+    "url": {
+      "type": "string",
+      "value": "[concat('https://', reference(resourceId('Microsoft.Network/publicIPAddresses', concat(variables('prefix'), '-ip')), '2024-05-01').dnsSettings.fqdn)]"
+    }
+  }
+}

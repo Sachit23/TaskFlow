@@ -1,34 +1,5 @@
-trigger:
-  branches:
-    include:
-      - feature/docker-integration
-
-jobs:
-- job: Build_And_Docker
-  displayName: Build JAR and Docker Images
-  pool:
-    name: Default
-
-  steps:
-  - checkout: self
-
-  - task: Maven@3
-    displayName: Build Project
-    inputs:
-      mavenPomFile: 'backend/pom.xml'
-      goals: 'clean package'
-
-  - script: |
-      docker build -t taskservice:latest backend/taskservice
-    displayName: Build TaskService Image
-
-  - script: |
-      docker build -t userservice:latest backend/userservice
-    displayName: Build UserService Image
-
-  - script: |
-      docker build -t apigateway:latest backend/apigateway
-    displayName: Build API Gateway Image
-
-  - script: docker images
-    displayName: List Docker Images
+# Compatibility entry point. Configure a single Azure DevOps pipeline using azure-pipelines.yml.
+trigger: none
+pr: none
+extends:
+ template: azure-pipelines.yml

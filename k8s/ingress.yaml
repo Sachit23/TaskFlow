@@ -1,24 +1,42 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: taskflow-ingress
-spec:
-  rules:
-    - host: taskflow.local
-      http:
-        paths:
-          - path: /api/users
-            pathType: Prefix
-            backend:
-              service:
-                name: userservice
-                port:
-                  number: 8080
-
-          - path: /api/tasks
-            pathType: Prefix
-            backend:
-              service:
-                name: taskservice
-                port:
-                  number: 8081
+{
+  "apiVersion": "networking.k8s.io/v1",
+  "kind": "Ingress",
+  "metadata": {
+    "name": "taskflow",
+    "annotations": {
+      "nginx.ingress.kubernetes.io/ssl-redirect": "true"
+    }
+  },
+  "spec": {
+    "ingressClassName": "nginx",
+    "tls": [
+      {
+        "hosts": [
+          "taskflow.example.com"
+        ],
+        "secretName": "taskflow-tls"
+      }
+    ],
+    "rules": [
+      {
+        "host": "taskflow.example.com",
+        "http": {
+          "paths": [
+            {
+              "path": "/",
+              "pathType": "Prefix",
+              "backend": {
+                "service": {
+                  "name": "web",
+                  "port": {
+                    "number": 80
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
