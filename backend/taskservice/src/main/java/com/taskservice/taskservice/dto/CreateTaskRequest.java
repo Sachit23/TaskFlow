@@ -1,31 +1,20 @@
 package com.taskservice.taskservice.dto;
-
 import java.time.LocalDate;
-
-import com.taskservice.taskservice.enums.TaskPriority;
-
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import java.util.*;
+import com.taskservice.taskservice.enums.*;
+import com.taskservice.taskservice.entity.ChecklistItem;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
-
-@Getter
-@Setter
+@Getter @Setter
 public class CreateTaskRequest {
-
-    @NotBlank
-    private String title;
-
-    private String description;
-
-    @NotNull
-    private TaskPriority priority;
-
-    @Future
-    private LocalDate dueDate;
-
-    @NotNull
-    private Long assignedUserId;
-
+ @NotBlank @Size(max=180) private String title;
+ @Size(max=10000) private String description;
+ @NotNull private TaskPriority priority=TaskPriority.MEDIUM;
+ @NotNull private TaskStatus status=TaskStatus.PENDING;
+ private LocalDate dueDate;
+ private Long projectId;
+ @Size(max=8) private List<@NotBlank @Size(max=30) String> labels=new ArrayList<>();
+ @Valid @Size(max=30) private List<ChecklistItem> checklist=new ArrayList<>();
 }
