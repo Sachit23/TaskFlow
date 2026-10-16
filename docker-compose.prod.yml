@@ -23,8 +23,7 @@ services:
       - "5434:5432"
 
   userservice:
-    build:
-      image: casestudy2026acr.azurecr.io/userservice:49
+    image: ghcr.io/sachit23/userservice:63
     container_name: userservice
     env_file: .env
     environment:
@@ -37,8 +36,7 @@ services:
       - "8080:8080"
 
   taskservice:
-    build:
-      image: casestudy2026acr.azurecr.io/taskservice:49
+    image: ghcr.io/sachit23/taskservice:63
     container_name: taskservice
     env_file: .env
     environment:
@@ -53,8 +51,7 @@ services:
       - "8081:8081"
 
   apigateway:
-    build:
-      image: casestudy2026acr.azurecr.io/apigateway:49
+    image: ghcr.io/sachit23/apigateway:63
     container_name: apigateway
     env_file: .env
     environment:
