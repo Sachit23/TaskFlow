@@ -56,6 +56,10 @@ This rolls back application images. It does not reverse database migrations. Bac
 
 Create one pipeline using **`azure-pipelines.yml`**. The old experimental pipeline files have been retired; repoint any existing definitions to this file.
 
+For the current development branch, select **Azure Repos Git → TaskFlow → Existing Azure Pipelines YAML file**, choose `feature/kubernetes-integration`, and set the path to `/azure-pipelines.yml`. Save and run the pipeline on that branch. If a TaskFlow pipeline already exists, update its YAML path instead of creating a duplicate. CI runs on `main`, `master`, `develop`, and `feature/*`; updates arriving during a run are batched. Azure Repos PR validation requires a build-validation policy on the target branch, rather than a YAML `pr` trigger.
+
+The repository's current default branch is `develop`. Push and verify the feature branch first, then open a pull request into `develop`; merging remains a separate review step. This verification pipeline does not require an Azure subscription or provision a host. Microsoft-hosted agent availability depends on your Azure DevOps organization's parallel-job entitlement; if a run reports no hosted parallelism, resolve that entitlement before configuring deployment.
+
 The pipeline:
 
 1. Runs backend and deployment tests and publishes coverage reports.

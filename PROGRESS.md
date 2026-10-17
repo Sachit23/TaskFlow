@@ -26,14 +26,22 @@ Local implementation and deployment verification are complete as of 17 October 2
 
 Earlier browser runs found selector issues and intermittent slow requests while image builds were active. The selectors were corrected; the final full suite passed against the warm, stable deployment without increasing assertion timeouts. Test process cleanup now stops child services correctly.
 
-## Next step: public hosting
+## Current step: Azure Repos synchronization
+
+The user refreshed Git authentication on 18 October 2026. Azure Repos `origin` points to `CaseStudy2026/TaskFlow`; its default branch is `develop`. The completed local feature branch is a fast-forward extension of `origin/feature/kubernetes-integration`. Sync this branch and verify its remote commit before considering a pull request into `develop`. Do not replace or force-push the shared branches.
+
+The canonical pipeline now includes feature-branch CI triggers. See [deployment/README.md](deployment/README.md#azure-devops-pipeline) for selecting the branch/YAML path and Azure Repos build-validation policies. Remote pipeline execution is still unverified.
+
+The user has deferred hosting until repository/pipeline synchronization is complete. The intended free Kubernetes route is now Oracle Always Free plus self-managed K3s, subject to account eligibility and capacity. No Oracle account or VM has been configured; the existing Kubernetes manifests still need a K3s/Traefik configuration, published ARM images, and actual cluster verification. The Azure VM workflow below remains an optional paid hosting route.
+
+## Optional Azure public hosting
 
 1. Create/connect an Azure subscription and sign into Azure CLI. Azure DevOps itself is not the app host.
 2. Use the documented provisioning command in [deployment/README.md](deployment/README.md), choosing a region/quota and restricted SSH CIDR.
 3. Verify the public hostname, HTTPS, and smoke checks on that actual Azure deployment.
 4. Configure the Azure DevOps service connection/environment and run the remote pipeline. Its commands have been exercised locally; no remote Azure DevOps run has occurred yet.
 
-No public URL, paid cloud resources, or remote Git pushes have been created. User authorization covered local implementation, testing, and commits. Follow the deployment guide before provisioning resources in an account.
+No public URL or paid cloud resources have been created. The user has authorized Azure Repos synchronization; follow the deployment guide before provisioning hosting resources in an account.
 
 ## Optional scope / known boundaries
 
