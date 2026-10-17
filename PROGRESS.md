@@ -1,6 +1,6 @@
 # TaskFlow implementation checkpoint
 
-Paused at the user's request on 17 October 2026. The project is **not yet ready to declare deployed or fully verified**. Resume from this checkout; do not restart the implementation.
+Paused again at the user's request on 17 October 2026 after resuming verification. The project is **not yet ready to declare deployed or fully verified**. Resume from this checkout; do not restart the implementation.
 
 ## Implemented
 
@@ -15,7 +15,7 @@ Paused at the user's request on 17 October 2026. The project is **not yet ready 
 
 ## Verification completed
 
-- All 20 database-backed backend tests passed (10 identity + 10 workspace tests).
+- Full clean backend verification passed: all **24 tests** (10 identity + 10 workspace + 4 gateway/proxy/rate-limit tests). Final request-logging configuration is included in this passing run.
 - Frontend TypeScript and production build passed.
 - Three frontend utility tests passed.
 - Both Compose files passed `docker compose --env-file .env.example ... config --quiet`.
@@ -23,13 +23,22 @@ Paused at the user's request on 17 October 2026. The project is **not yet ready 
 - Real local stack started successfully at http://127.0.0.1:5173 with all three Java services and persistent file-backed H2 databases.
 - Existing production Compose edits were preserved in commit 459fe2f. Core backend work was committed as ffc998f.
 
+## Latest verification session
+
+- Ran the real app in Chrome. **Three of four browser scenarios passed:** sample workspace/search/drag-and-drop/CSV/deletion; mobile navigation/dark-mode/task creation; and isolation between two accounts through the real gateway.
+- The desktop lifecycle scenario stopped on an **ambiguous test locator**, not a demonstrated application failure: `getByRole('button', {name: 'New task'})` matches both the heading action (`New task N`) and the dashboard add action (`Add a new task Just one small step.`). Scope it to `.heading-actions`, or give the primary action a stable accessible name and use an exact locator. The rest of that scenario still needs to run.
+- Desktop board screenshot was visually inspected. Desktop/mobile screenshot copies are retained in `docs/previews/`.
+- `kubectl kustomize k8s` succeeded; rendered manifests are at `/tmp/taskflow-k8s.yaml`. No cluster/server-side validation has run.
+- Docker Desktop is available (Engine 29.2.1). An isolated build was started with `IMAGE_PREFIX=taskflow-qa WEB_PORT=18088 COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file .env.example -p taskflow-qa up -d --build --wait --wait-timeout 300`. It was **interrupted at the user's pause request** during image/dependency downloads; PostgreSQL stack startup and smoke testing remain unverified. Image/build caches are retained; no database volumes were removed.
+- Browser artifacts and error details remain under ignored `frontend/test-results/`. Logs are `/tmp/taskflow-browser.log` and `/tmp/taskflow-docker.log`.
+
 ## Still pending — next session
 
-1. Run the newly written Playwright tests in `frontend/e2e/workspace.spec.ts`; inspect desktop/mobile screenshots and fix observed UI/interaction issues. They have **not** run yet.
-2. Run the full backend suite again, including the four newly added actual gateway/proxy/rate-limit tests. The 20 passing tests predate those gateway tests and the final request-logging configuration.
-3. Build and run the Docker stack against PostgreSQL; execute `python3 scripts/smoke.py http://localhost:8088`, test restart persistence, inspect health checks, and validate the Caddy configuration/CSP. Docker Desktop was launched, but container testing has **not** happened.
+1. Fix the ambiguous desktop lifecycle test locator in `frontend/e2e/workspace.spec.ts`, rerun that scenario, then rerun the browser suite only as needed for any new fixes. Three scenarios already pass. Inspect the mobile screenshot and check the full desktop lifecycle once its test runs past task creation.
+2. Backend verification is complete: all 24 tests pass. Repeat it only if backend changes are made.
+3. Build and run the Docker stack against PostgreSQL; execute `python3 scripts/smoke.py http://localhost:8088`, test restart persistence, inspect health checks, and validate the Caddy configuration/CSP. Docker Desktop and the build were exercised, but the build was paused before container startup; see the exact isolated-build command above.
 4. Review the new Azure ARM template, cloud-init, release stage, and deployment script. They are written but **have not been deployed or validated against Azure**. Confirm release rollback, backups/restoration, VM SKU/quota, and build resource usage.
-5. Validate Kubernetes with kubectl/kustomize and a real cluster if Kubernetes remains in scope. It is an optional deployment route; single-server Azure deployment is the primary path.
+5. Kustomize rendering passes. Validate Kubernetes with a real cluster/server-side dry run if Kubernetes remains in scope. It is an optional deployment route; single-server Azure deployment is the primary path.
 6. Finish deployment/operator documentation and consider migration of legacy databases. Flyway intentionally does not auto-baseline an existing Hibernate-managed database; back it up and prepare an explicit migration. Never erase existing user data to bypass this.
 7. Review API ergonomics, accessibility, loading/error states, mobile board behavior, session handling, password recovery (not implemented), and feature limitations before claiming production readiness.
 8. Run final checks and commit fixes in logical groups. No changes have been pushed remotely.
