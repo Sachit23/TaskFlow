@@ -32,11 +32,11 @@ The user refreshed Git authentication on 18 October 2026. Azure Repos `origin` p
 
 The canonical pipeline now includes feature-branch CI triggers, and its stage indentation was corrected and parsed with Ruby/Psych. All nine deployment/infrastructure checks passed again. Azure pipeline **8 (`TaskFlow-Git-CI`)** was updated to `azure-pipelines.yml`, with its default build branch set to the current feature branch. Existing secret variables were preserved from the previous definition revision. Obsolete pipelines 5, 6, and 7 were disabled, retaining their history; pipelines 1–4 were already disabled.
 
-Remote verification [build 64](https://dev.azure.com/CaseStudy2026/TaskFlow/_build/results?buildId=64) was queued for `dd1bd6d` on Microsoft-hosted agents. **Both the Browser and Java jobs passed remotely**; release packaging was still running at this checkpoint. See [deployment/README.md](deployment/README.md#azure-devops-pipeline) for Azure Repos build-validation policies. This status-only checkpoint uses `[skip ci]` to avoid queuing a duplicate full build.
+Remote verification [build 64](https://dev.azure.com/CaseStudy2026/TaskFlow/_build/results?buildId=64) **completed successfully** for `dd1bd6d` on Microsoft-hosted agents. The Browser, Java, and Bundle jobs all passed, including production-container browser checks, backend/deployment tests, and release packaging. See [deployment/README.md](deployment/README.md#azure-devops-pipeline) for Azure Repos build-validation policies. Subsequent status-only checkpoints use `[skip ci]` to avoid queuing a duplicate full build.
 
 ### Paused at the user's request
 
-Repository synchronization and pipeline configuration are saved. Resume by checking build 64's final result and release artifact, then review a pull request from `feature/kubernetes-integration` into `develop`. No PR or merge has been performed. Hosting, Oracle provisioning, and Kubernetes changes remain deferred.
+Repository synchronization and pipeline configuration are saved, with a successful remote verification run. Resume by reviewing the release artifact and a pull request from `feature/kubernetes-integration` into `develop`. No PR or merge has been performed. Hosting, Oracle provisioning, and Kubernetes changes remain deferred.
 
 CI reported nonblocking warnings: `NodeTool@0` is deprecated in favor of `UseNode@1`, and `ubuntu-latest` is scheduled to move to Ubuntu 26. Consider pinning a reviewed agent image on the next pipeline maintenance pass. The unused optional Azure deployment-stage fragment also has indentation issues to correct and validate before enabling it; it is not part of the running canonical verification pipeline.
 
