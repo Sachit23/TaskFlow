@@ -28,9 +28,17 @@ Earlier browser runs found selector issues and intermittent slow requests while 
 
 ## Current step: Azure Repos synchronization
 
-The user refreshed Git authentication on 18 October 2026. Azure Repos `origin` points to `CaseStudy2026/TaskFlow`; its default branch is `develop`. The completed local feature branch is a fast-forward extension of `origin/feature/kubernetes-integration`. Sync this branch and verify its remote commit before considering a pull request into `develop`. Do not replace or force-push the shared branches.
+The user refreshed Git authentication on 18 October 2026. Azure Repos `origin` points to `CaseStudy2026/TaskFlow`; its default branch is `develop`. The completed feature branch was pushed without force and its remote commit was verified as `dd1bd6d06d2bec0647af80a87af508a338345139`. Local and remote tracking were configured and showed zero commits ahead/behind. The shared `develop` and `main` branches remain unchanged; a pull request into `develop` is a separate next step.
 
-The canonical pipeline now includes feature-branch CI triggers. See [deployment/README.md](deployment/README.md#azure-devops-pipeline) for selecting the branch/YAML path and Azure Repos build-validation policies. Remote pipeline execution is still unverified.
+The canonical pipeline now includes feature-branch CI triggers, and its stage indentation was corrected and parsed with Ruby/Psych. All nine deployment/infrastructure checks passed again. Azure pipeline **8 (`TaskFlow-Git-CI`)** was updated to `azure-pipelines.yml`, with its default build branch set to the current feature branch. Existing secret variables were preserved from the previous definition revision. Obsolete pipelines 5, 6, and 7 were disabled, retaining their history; pipelines 1–4 were already disabled.
+
+Remote verification [build 64](https://dev.azure.com/CaseStudy2026/TaskFlow/_build/results?buildId=64) was queued for `dd1bd6d` on Microsoft-hosted agents. **Both the Browser and Java jobs passed remotely**; release packaging was still running at this checkpoint. See [deployment/README.md](deployment/README.md#azure-devops-pipeline) for Azure Repos build-validation policies. This status-only checkpoint uses `[skip ci]` to avoid queuing a duplicate full build.
+
+### Paused at the user's request
+
+Repository synchronization and pipeline configuration are saved. Resume by checking build 64's final result and release artifact, then review a pull request from `feature/kubernetes-integration` into `develop`. No PR or merge has been performed. Hosting, Oracle provisioning, and Kubernetes changes remain deferred.
+
+CI reported nonblocking warnings: `NodeTool@0` is deprecated in favor of `UseNode@1`, and `ubuntu-latest` is scheduled to move to Ubuntu 26. Consider pinning a reviewed agent image on the next pipeline maintenance pass. The unused optional Azure deployment-stage fragment also has indentation issues to correct and validate before enabling it; it is not part of the running canonical verification pipeline.
 
 The user has deferred hosting until repository/pipeline synchronization is complete. The intended free Kubernetes route is now Oracle Always Free plus self-managed K3s, subject to account eligibility and capacity. No Oracle account or VM has been configured; the existing Kubernetes manifests still need a K3s/Traefik configuration, published ARM images, and actual cluster verification. The Azure VM workflow below remains an optional paid hosting route.
 
@@ -39,7 +47,7 @@ The user has deferred hosting until repository/pipeline synchronization is compl
 1. Create/connect an Azure subscription and sign into Azure CLI. Azure DevOps itself is not the app host.
 2. Use the documented provisioning command in [deployment/README.md](deployment/README.md), choosing a region/quota and restricted SSH CIDR.
 3. Verify the public hostname, HTTPS, and smoke checks on that actual Azure deployment.
-4. Configure the Azure DevOps service connection/environment and run the remote pipeline. Its commands have been exercised locally; no remote Azure DevOps run has occurred yet.
+4. Configure the Azure DevOps deployment service connection/environment and run the optional deployment stage. The verification pipeline has been queued remotely; production delivery has not been configured or run.
 
 No public URL or paid cloud resources have been created. The user has authorized Azure Repos synchronization; follow the deployment guide before provisioning hosting resources in an account.
 

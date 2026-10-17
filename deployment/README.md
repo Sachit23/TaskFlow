@@ -1,6 +1,6 @@
 # Deploying TaskFlow
 
-The Docker/PostgreSQL stack, all browser workflows, restart persistence, and backup/restoration have been tested locally. Azure resource creation and the Azure DevOps pipeline still need their first run in your account. [Verification details](../PROGRESS.md).
+The Docker/PostgreSQL stack, all browser workflows, restart persistence, and backup/restoration have been tested locally. Azure DevOps verification has been queued remotely; hosting and production delivery have not been configured. [Verification details](../PROGRESS.md).
 
 ## Any Linux server
 
@@ -55,6 +55,8 @@ This rolls back application images. It does not reverse database migrations. Bac
 ## Azure DevOps pipeline
 
 Create one pipeline using **`azure-pipelines.yml`**. The old experimental pipeline files have been retired; repoint any existing definitions to this file.
+
+The connected project's pipeline **8 (`TaskFlow-Git-CI`)** now uses this file and defaults to `feature/kubernetes-integration`. Obsolete definitions 5–7 are disabled and retain their history. Use the existing pipeline rather than creating another copy.
 
 For the current development branch, select **Azure Repos Git → TaskFlow → Existing Azure Pipelines YAML file**, choose `feature/kubernetes-integration`, and set the path to `/azure-pipelines.yml`. Save and run the pipeline on that branch. If a TaskFlow pipeline already exists, update its YAML path instead of creating a duplicate. CI runs on `main`, `master`, `develop`, and `feature/*`; updates arriving during a run are batched. Azure Repos PR validation requires a build-validation policy on the target branch, rather than a YAML `pr` trigger.
 
