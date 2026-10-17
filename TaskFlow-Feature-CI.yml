@@ -1,5 +1,0 @@
-# Compatibility entry point. Configure a single Azure DevOps pipeline using azure-pipelines.yml.
-trigger: none
-pr: none
-extends:
- template: azure-pipelines.yml

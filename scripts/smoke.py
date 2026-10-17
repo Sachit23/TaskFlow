@@ -33,6 +33,9 @@ p=request('/projects','POST',{'name':'Deployment verification','description':'Sm
 t=request('/tasks','POST',{'title':'Verify the deployed stack','projectId':p['id'],'priority':'HIGH'},201)
 t['status']='COMPLETED';t=request('/tasks/'+str(t['id']),'PUT',t)
 assert t['status']=='COMPLETED'
+assert any(item['id']==t['id'] for item in request('/tasks'))
+assert any(item['id']==p['id'] for item in request('/projects'))
+assert request('/activity')
 request('/tasks/'+str(t['id'])+'/comments','POST',{'body':'Verified through the public entry point.'},201)
 request('/tasks/'+str(t['id']),'DELETE',expected=204)
 request('/projects/'+str(p['id']),'DELETE',expected=204)
