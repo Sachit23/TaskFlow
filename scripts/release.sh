@@ -66,6 +66,9 @@ python3 - "$deploy_root" "$release_dir" "$previous" <<'PY'
 import os,sys
 from pathlib import Path
 root=Path(sys.argv[1])
+env=root/'.env'
+lines=[line for line in env.read_text().splitlines() if not line.startswith('IMAGE_TAG=')]
+env.write_text('\n'.join(lines+['IMAGE_TAG='+Path(sys.argv[2]).name])+'\n')
 for name,target in [('current',sys.argv[2]),('previous',sys.argv[3])]:
     if target:
         tmp=root/('.'+name+'-next')

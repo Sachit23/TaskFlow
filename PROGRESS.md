@@ -1,60 +1,64 @@
-# TaskFlow implementation checkpoint
+# TaskFlow status
 
-Paused again at the user's request on 17 October 2026 after resuming verification. The project is **not yet ready to declare deployed or fully verified**. Resume from this checkout; do not restart the implementation.
+Local implementation and deployment verification are complete as of 17 October 2026. **The app is not yet publicly deployed.** No Azure subscription, service connection, or live host has been supplied. The user has an Azure DevOps account only.
 
-## Implemented
+## Working application
 
-- Updated Spring Boot 3.5.16 / Spring Cloud 2025.0.2 on Java 17.
-- Secure registration/login with hashed passwords, random opaque sessions, hashed session tokens, expiry, logout/revocation, profile/password updates, and account ownership enforcement.
-- Projects, task CRUD, four priorities, status transitions, dates, labels, subtasks, notes/comments, and activity history. Optimistic locking protects simultaneous edits.
-- Flyway schemas and persistent local H2 profile; PostgreSQL for container deployments.
-- React/TypeScript app: account screens, dashboard, Kanban/list, search/filter/sort, task/project editors, activity, profile/security settings, CSV export, optional editable sample project, responsive layouts, and dark mode.
-- Multi-stage Docker builds, isolated services, persistent PostgreSQL volumes, Caddy reverse proxy/HTTPS, health checks, generated secrets, backup and smoke scripts.
-- Azure ARM infrastructure, deployment script, Azure DevOps verification/package pipeline and optional release-stage template.
-- Updated Kubernetes manifests with persistent database storage and secret references.
+- Secure accounts, expiring/revocable sessions, profile/password changes, and private workspaces.
+- Projects, dashboard, Kanban/list views, task priorities/status/dates, labels, subtasks, comments, activity history, search/filter/sort, CSV export, dark mode, and responsive layouts.
+- Self-hosted fonts, accessible named dialogs, and optional editable sample data.
+- Three Java services, two PostgreSQL databases, and Caddy web/HTTPS ingress.
+- Versioned Flyway schemas, non-root Java containers, private service networks, persistent volumes, health checks, and bounded container logs.
+- Versioned releases with startup image rollback, consistent checksummed backups, restoration tooling, and a canonical Azure DevOps pipeline that tests production containers.
 
-## Verification completed
+## Verification evidence
 
-- Full clean backend verification passed: all **24 tests** (10 identity + 10 workspace + 4 gateway/proxy/rate-limit tests). Final request-logging configuration is included in this passing run.
-- Frontend TypeScript and production build passed.
-- Three frontend utility tests passed.
-- Both Compose files passed `docker compose --env-file .env.example ... config --quiet`.
-- Python scripts compile and shell scripts pass `bash -n`.
-- Real local stack started successfully at http://127.0.0.1:5173 with all three Java services and persistent file-backed H2 databases.
-- Existing production Compose edits were preserved in commit 459fe2f. Core backend work was committed as ffc998f.
+- **24 backend tests passed:** 10 identity, 10 workspace/database, 4 actual gateway/proxy/rate-limit checks.
+- **3 frontend unit tests passed** and TypeScript/production build passed.
+- **9 deployment/infrastructure tests passed:** release promotion, rollback on failed startup, deleted-source isolation, private first-deploy secrets, hostname updates, unsafe archive rejection, and offline Azure configuration properties.
+- **4 full browser scenarios passed against the Docker/PostgreSQL build:** desktop account/project/task/comment/profile/login lifecycle; sample project/search/drag-and-drop/export/deletion; mobile dark-mode task creation; two-account isolation. Last full run: `/tmp/taskflow-browser-docker.log` (4 passed in 28.9 seconds).
+- All six test containers healthy. API smoke checks passed through Caddy after deployment and after database recovery.
+- Complete stack stop/start preserved accounts, sessions, projects, tasks, labels, subtasks, and comments.
+- Both databases were backed up, records changed, then restored; original values and the session were verified afterward. Only isolated `taskflow-qa` test volumes were used.
+- Production frontend dependency audit: **0 reported advisories** at verification time. This is not a blanket security certification of all application/container dependencies.
+- Caddy HTTP and HTTPS-hostname configuration validation passed; actual public certificate issuance still requires a public deployment.
+- Both Compose files parse, shell scripts pass `bash -n`, Python scripts compile, and Kubernetes manifests render through Kustomize.
 
-## Latest verification session
+Earlier browser runs found selector issues and intermittent slow requests while image builds were active. The selectors were corrected; the final full suite passed against the warm, stable deployment without increasing assertion timeouts. Test process cleanup now stops child services correctly.
 
-- Ran the real app in Chrome. **Three of four browser scenarios passed:** sample workspace/search/drag-and-drop/CSV/deletion; mobile navigation/dark-mode/task creation; and isolation between two accounts through the real gateway.
-- The desktop lifecycle scenario stopped on an **ambiguous test locator**, not a demonstrated application failure: `getByRole('button', {name: 'New task'})` matches both the heading action (`New task N`) and the dashboard add action (`Add a new task Just one small step.`). Scope it to `.heading-actions`, or give the primary action a stable accessible name and use an exact locator. The rest of that scenario still needs to run.
-- Desktop board screenshot was visually inspected. Desktop/mobile screenshot copies are retained in `docs/previews/`.
-- `kubectl kustomize k8s` succeeded; rendered manifests are at `/tmp/taskflow-k8s.yaml`. No cluster/server-side validation has run.
-- Docker Desktop is available (Engine 29.2.1). An isolated build was started with `IMAGE_PREFIX=taskflow-qa WEB_PORT=18088 COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file .env.example -p taskflow-qa up -d --build --wait --wait-timeout 300`. It was **interrupted at the user's pause request** during image/dependency downloads; PostgreSQL stack startup and smoke testing remain unverified. Image/build caches are retained; no database volumes were removed.
-- Browser artifacts and error details remain under ignored `frontend/test-results/`. Logs are `/tmp/taskflow-browser.log` and `/tmp/taskflow-docker.log`.
+## Next step: public hosting
 
-## Still pending — next session
+1. Create/connect an Azure subscription and sign into Azure CLI. Azure DevOps itself is not the app host.
+2. Use the documented provisioning command in [deployment/README.md](deployment/README.md), choosing a region/quota and restricted SSH CIDR.
+3. Verify the public hostname, HTTPS, and smoke checks on that actual Azure deployment.
+4. Configure the Azure DevOps service connection/environment and run the remote pipeline. Its commands have been exercised locally; no remote Azure DevOps run has occurred yet.
 
-1. Fix the ambiguous desktop lifecycle test locator in `frontend/e2e/workspace.spec.ts`, rerun that scenario, then rerun the browser suite only as needed for any new fixes. Three scenarios already pass. Inspect the mobile screenshot and check the full desktop lifecycle once its test runs past task creation.
-2. Backend verification is complete: all 24 tests pass. Repeat it only if backend changes are made.
-3. Build and run the Docker stack against PostgreSQL; execute `python3 scripts/smoke.py http://localhost:8088`, test restart persistence, inspect health checks, and validate the Caddy configuration/CSP. Docker Desktop and the build were exercised, but the build was paused before container startup; see the exact isolated-build command above.
-4. Review the new Azure ARM template, cloud-init, release stage, and deployment script. They are written but **have not been deployed or validated against Azure**. Confirm release rollback, backups/restoration, VM SKU/quota, and build resource usage.
-5. Kustomize rendering passes. Validate Kubernetes with a real cluster/server-side dry run if Kubernetes remains in scope. It is an optional deployment route; single-server Azure deployment is the primary path.
-6. Finish deployment/operator documentation and consider migration of legacy databases. Flyway intentionally does not auto-baseline an existing Hibernate-managed database; back it up and prepare an explicit migration. Never erase existing user data to bypass this.
-7. Review API ergonomics, accessibility, loading/error states, mobile board behavior, session handling, password recovery (not implemented), and feature limitations before claiming production readiness.
-8. Run final checks and commit fixes in logical groups. No changes have been pushed remotely.
+No public URL, paid cloud resources, or remote Git pushes have been created. User authorization covered local implementation, testing, and commits. Follow the deployment guide before provisioning resources in an account.
 
-## User constraints / hosting
+## Optional scope / known boundaries
 
-The user wants a polished, substantial, working application, deployable and accessible on the internet, and explicitly requested commits. They have **Azure DevOps only**, with **no Azure services created**. No Azure subscription/credentials or live host have been supplied. A live deployment is still pending that setup. Do not claim there is a public URL.
+- This release provides personal workspaces. Team membership, file uploads, email verification, and password recovery are not implemented.
+- Single-VM deployment has update interruptions; image rollback does not undo database migrations.
+- Azure template checks are offline; Azure API/quota validation awaits an account. Kubernetes is rendered but not cluster-tested.
+- Old Hibernate-managed/PostgreSQL 15 databases require a reviewed migration, not automatic reset/baselining. Existing user databases were not touched.
 
-## Local tools / state
+## Local preview and reproduction
 
-- Repo: `/Users/kartik/Desktop/Task Management/TaskFlow`, branch `feature/kubernetes-integration`.
-- Maven defaults to Java 25 on this Mac. Explicitly set `JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home`.
-- System Node is 18.15; current Playwright needs Node 20+. Temporary Node 22 installed at `/tmp/taskflow-tools/node_modules/node/bin/node`. Docker and CI use Node 22.
-- For browser QA on this Mac, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'` and put the temporary Node bin directory first on PATH. Use the standard bundled Chromium on CI.
-- `python3 scripts/dev.py` builds the local profile and starts the app; it must build **cleanly** when switching between PostgreSQL-only and H2-enabled packages, which the script now does.
-- Local databases/logs are under ignored `.local-data/` and `.local-logs/`. `.env` already existed and was left untouched; no secret values were printed or committed.
-- Existing tracked `.DS_Store` modifications belong to the user; leave them unstaged.
-- Git had no author identity configured. Checkpoint commits use per-command `Codex <codex@openai.com>` without altering global/repository configuration.
-- Detailed tool logs: `/tmp/taskflow-tests.log`, `/tmp/taskflow-local-build.log`, `/tmp/taskflow-dev.log`.
+The isolated verification stack is available at **http://127.0.0.1:18088** while Docker Desktop is running. It contains generated test accounts/data; create an account to explore it.
+
+```sh
+IMAGE_PREFIX=taskflow-qa WEB_PORT=18088 docker compose --env-file .env.example -p taskflow-qa up -d --no-build --wait
+```
+
+A normal local deployment uses `python3 scripts/setup.py` and `docker compose up -d --build --wait --wait-timeout 300`, then http://localhost:8088. The original `.env` was left unchanged.
+
+## Repository / environment
+
+- Repository: `/Users/kartik/Desktop/Task Management/TaskFlow`; branch `feature/kubernetes-integration`.
+- Java 17: `/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home`. Maven otherwise defaults to Java 25 on this Mac.
+- System Node is 18.15. Temporary Node 22 for verification: `/tmp/taskflow-tools/node_modules/node/bin/node`. Docker and CI use Node 22.
+- Local Chrome testing uses `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'`. CI installs its matching Playwright Chromium.
+- Local H2 data/logs are ignored under `.local-data/` and `.local-logs/`. Browser traces/results and QA backup artifacts are also local and untracked.
+- User-owned tracked `.DS_Store` changes remain unstaged. Existing production image configuration was preserved in commit `459fe2f` before implementation.
+- Git identity was not configured; commits use per-command `Codex <codex@openai.com>` without modifying repository/global identity.
+- Verification logs: `/tmp/taskflow-tests.log`, `/tmp/taskflow-browser-docker.log`, `/tmp/taskflow-storage.log`, `/tmp/taskflow-audit.json`. Storage verification helper: `/tmp/taskflow-verify-storage.py`; its synthetic records were removed after the test.

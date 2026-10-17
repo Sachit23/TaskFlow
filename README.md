@@ -1,12 +1,30 @@
 # TaskFlow
 
-A focused project and task workspace built with React, TypeScript, Spring Boot, PostgreSQL, and an API gateway. Includes private accounts, projects, Kanban and list views, priorities, due dates, subtasks, comments, activity history, dark mode, and CSV exports.
+A focused project workspace for turning plans into finished work. Built with React, TypeScript, Spring Boot, PostgreSQL, and an API gateway.
 
-**Implementation is checkpointed, not yet fully release-verified.** See [PROGRESS.md](PROGRESS.md) for completed checks and the exact remaining work.
+Private accounts · Project dashboards · Kanban and list views · Priorities and due dates · Labels and subtasks · Notes and activity · CSV exports · Responsive layouts · Dark mode
 
-## Run locally
+![TaskFlow board](docs/previews/desktop-board.png)
 
-Install Java 17, Maven, Python 3, and Node 22. Then:
+The application and PostgreSQL deployment have been verified locally. Public hosting is ready to configure; no Azure resources or public URL have been created yet. See [verification and remaining setup](PROGRESS.md).
+
+## Start with Docker
+
+Install Docker Desktop, or Docker Engine with Compose v2, and start it. From the repository root:
+
+```sh
+python3 scripts/setup.py
+docker compose up -d --build --wait --wait-timeout 300
+python3 scripts/smoke.py http://localhost:8088 --wait-seconds 60
+```
+
+Open **http://localhost:8088** and create your account. Setup generates private database passwords without overwriting an existing `.env`. There are no shared demo credentials. You can optionally add an editable sample project inside the workspace.
+
+Normal restarts and `docker compose down` preserve your databases. `docker compose down -v` deletes database volumes.
+
+## Develop locally
+
+Install Java 17, Maven, Python 3, and Node 22:
 
 ```sh
 cd frontend
@@ -15,30 +33,19 @@ cd ..
 python3 scripts/dev.py
 ```
 
-Open http://127.0.0.1:5173 and create an account. Local mode uses persistent H2 databases under `.local-data/`. Passwords and session tokens are never preconfigured; there are no shared demo credentials. Sample projects are added only when requested inside the app.
+Open http://127.0.0.1:5173. Development uses persistent H2 databases in `.local-data/`; container deployments use PostgreSQL. Service logs are in `.local-logs/`. The launcher selects the installed Temurin 17 JDK on macOS when available and stops its child processes when you exit.
 
-## Docker
+## Deploy publicly
 
-With Docker Desktop or Docker Engine running:
+Follow [the deployment guide](deployment/README.md). It includes Azure infrastructure, HTTPS, immutable source releases, startup rollback, Azure DevOps CI/CD, and backup/restoration commands.
 
-```sh
-python3 scripts/setup.py
-docker compose up -d --build --wait
-python3 scripts/smoke.py http://localhost:8088
-```
+Azure DevOps runs the pipeline. An **Azure subscription or another Linux server** is needed to host the app. The supplied Azure template provisions a VM with a public DNS hostname; a separately purchased domain is optional.
 
-Open http://localhost:8088. Database volumes survive normal container restarts and `docker compose down`. Do not use `down -v` unless you intend to remove the databases.
-
-## Public deployment
-
-See [deployment/README.md](deployment/README.md). The production Compose file serves the app through Caddy on ports 80/443 and obtains HTTPS certificates for the configured public hostname. Java services and databases are private to the Docker network.
-
-Azure DevOps runs CI/CD; an Azure subscription or another server is still required to host the application. Infrastructure and release configuration are included but have not yet been exercised against a live Azure account.
-
-## Checks
+## Verify changes
 
 ```sh
 mvn -f backend/pom.xml clean verify
+python3 -m unittest discover -s scripts/tests -v
 cd frontend
 npm ci
 npm run build
@@ -47,17 +54,25 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Select Java 17 explicitly if Maven uses a different JDK. Playwright starts the real local stack and requires Node 20.19 or newer. The first database-backed backend suite and frontend checks pass; browser, container, and Azure verification remain pending at this checkpoint.
+Select Java 17 explicitly if Maven defaults to another JDK. Browser tests normally start the local app. To exercise a running Docker deployment instead:
+
+```sh
+TASKFLOW_BASE_URL=http://127.0.0.1:8088 npm run test:e2e
+```
+
+Verification includes 24 backend tests, 3 frontend utility tests, 9 deployment/infrastructure checks, and 4 browser workflows. The real PostgreSQL stack also passed a complete restart and a two-database backup/restore check.
 
 ## Architecture
 
 ```text
-Browser → Caddy (web + HTTPS) → API gateway
-                               ├─ User service → identity PostgreSQL
-                               └─ Task service → workspace PostgreSQL
-                                      └─ session validation → User service
+Browser → Caddy (static web + HTTPS) → API gateway
+                                      ├─ User service → Identity PostgreSQL
+                                      └─ Task service → Workspace PostgreSQL
+                                             └─ Session validation → User service
 ```
 
-Sessions use random bearer tokens stored in the browser's session storage, with hashed tokens and a seven-day expiry in the identity database. The task service validates sessions and enforces ownership for every workspace operation. Password changes revoke other sessions. Every account has its own personal workspace; shared team membership, file attachments, email verification, and password recovery are not implemented.
+Only the web entry point is exposed in deployment. Accounts own separate workspaces. Passwords use BCrypt; random session tokens are stored in browser session storage, hashed in the database, and expire after seven days. Logout revokes the session; changing a password revokes other sessions. Task versions protect against overwriting edits made in another tab.
 
-Flyway owns schema changes; production uses Hibernate validation. Existing databases from the earlier version require a reviewed migration before adoption. See the checkpoint notes before connecting an old database.
+Flyway owns the schema and Hibernate validates it at startup. Existing databases from the original Hibernate-managed version require a reviewed migration before adoption; setup does not silently reset or baseline them.
+
+The current product is a personal project workspace. Team membership, file attachments, email verification, and email-based password recovery are outside this release. Fonts are bundled with the app; their licenses are included under `frontend/public/licenses/`.

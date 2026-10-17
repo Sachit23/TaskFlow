@@ -29,12 +29,14 @@ if '--build' in sys.argv and os.environ.get('FAIL_NEW_RELEASE')=='1':sys.exit(1)
     def test_success_promotes_and_preserves_shared_secret(self):
         result=self.run_release(self.archive('first'));self.assertEqual(result.returncode,0,result.stderr)
         current=(self.site/'current').resolve();self.assertEqual((current/'.env').resolve(),(self.site/'.env').resolve())
-        self.assertEqual((self.site/'.env').read_text(),'PUBLIC_ADDRESS=example.com\n')
+        self.assertIn('PUBLIC_ADDRESS=example.com',(self.site/'.env').read_text())
+        self.assertIn('IMAGE_TAG='+current.name,(self.site/'.env').read_text())
         call=json.loads(self.log.read_text().splitlines()[0]);self.assertEqual(call['tag'],current.name)
     def test_failed_update_rolls_back_without_promoting(self):
         self.assertEqual(self.run_release(self.archive('first')).returncode,0)
         first=(self.site/'current').resolve();result=self.run_release(self.archive('second'),FAIL_NEW_RELEASE='1')
         self.assertNotEqual(result.returncode,0);self.assertEqual((self.site/'current').resolve(),first)
+        self.assertIn('IMAGE_TAG='+first.name,(self.site/'.env').read_text())
         last=json.loads(self.log.read_text().splitlines()[-1]);self.assertEqual(last['tag'],first.name);self.assertIn('--no-build',last['args'])
     def test_new_release_does_not_retain_deleted_source(self):
         self.assertEqual(self.run_release(self.archive('first',{'obsolete.txt':'old'})).returncode,0)
