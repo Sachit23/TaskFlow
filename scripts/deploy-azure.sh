@@ -20,19 +20,16 @@ printf 'VM provisioned: %s. Verify its SSH fingerprint in Azure before accepting
 ssh -i "$private_key" -o StrictHostKeyChecking=ask "taskflow@$hostname" 'sudo cloud-init status --wait'
 archive="$(mktemp -t taskflow-source.XXXXXX)"
 trap 'rm -f "$archive"' EXIT
-tar --exclude='./.git' --exclude='./.env' --exclude='./.env.*' --exclude='./frontend/node_modules' --exclude='./frontend/dist' --exclude='./frontend/test-results' --exclude='./frontend/playwright-report' --exclude='./.local-data' --exclude='./.local-logs' --exclude='./backups' --exclude='*/target' --exclude='*.DS_Store' -czf "$archive" .
+# Deploy committed source only; ignored local secrets never enter the archive.
+git archive --format=tar.gz --output="$archive" HEAD
 scp -i "$private_key" "$archive" "taskflow@$hostname:/opt/taskflow/source.tar.gz"
 ssh -i "$private_key" "taskflow@$hostname" bash -s -- "$hostname" <<'REMOTE'
 set -euo pipefail
 cd /opt/taskflow
-tar -xzf source.tar.gz
-python3 scripts/setup.py
-python3 - "$1" <<'ENV'
-from pathlib import Path
-import sys
-p=Path('.env');s=p.read_text();s='\n'.join('PUBLIC_ADDRESS='+sys.argv[1] if l.startswith('PUBLIC_ADDRESS=')else l for l in s.splitlines())+'\n';p.write_text(s)
-ENV
-sudo env COMPOSE_PARALLEL_LIMIT=1 docker compose -f docker-compose.prod.yml up -d --build --wait --wait-timeout 300
+bootstrap_dir="$(mktemp -d)"
+trap 'rm -rf "$bootstrap_dir"' EXIT
+tar -xzf source.tar.gz -C "$bootstrap_dir" scripts/release.sh
+sudo env TASKFLOW_PUBLIC_ADDRESS="$1" bash "$bootstrap_dir/scripts/release.sh" /opt/taskflow/source.tar.gz /opt/taskflow
 REMOTE
-python3 scripts/smoke.py "https://$hostname"
+python3 scripts/smoke.py "https://$hostname" --wait-seconds 180
 printf '\nTaskFlow is live at https://%s\n' "$hostname"

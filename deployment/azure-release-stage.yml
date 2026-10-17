@@ -27,8 +27,10 @@
          inline: |
           set -eu
           cd /opt/taskflow
-          tar -xzf taskflow.tar.gz
-          sudo env COMPOSE_PARALLEL_LIMIT=1 docker compose -f docker-compose.prod.yml up -d --build --wait --wait-timeout 300
+          bootstrap_dir="$(mktemp -d)"
+          trap 'rm -rf "$bootstrap_dir"' EXIT
+          tar -xzf taskflow.tar.gz -C "$bootstrap_dir" scripts/release.sh
+          sudo bash "$bootstrap_dir/scripts/release.sh" /opt/taskflow/taskflow.tar.gz /opt/taskflow
          failOnStdErr: false
-      - script: python3 scripts/smoke.py "$(TASKFLOW_PUBLIC_URL)"
+      - script: python3 scripts/smoke.py "$(TASKFLOW_PUBLIC_URL)" --wait-seconds 180
         displayName: Verify deployed app

@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 """Exercise a deployed stack through its public HTTP entry point. Uses a unique account."""
-import json,sys,uuid,urllib.request,urllib.error
-base=(sys.argv[1]if len(sys.argv)>1 else 'http://localhost:8088').rstrip('/')
+import argparse,json,sys,time,uuid,urllib.request,urllib.error
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('url',nargs='?',default='http://localhost:8088')
+parser.add_argument('--wait-seconds',type=int,default=0,help='Wait for the HTTPS entry point before testing writes.')
+args=parser.parse_args()
+base=args.url.rstrip('/')
+deadline=time.monotonic()+args.wait_seconds
+while True:
+ try:
+  with urllib.request.urlopen(base+'/healthz',timeout=5) as health:
+   if health.status==200:break
+ except (urllib.error.URLError,TimeoutError):
+  if time.monotonic()>=deadline:raise SystemExit('The web entry point is not ready: '+base)
+  time.sleep(2)
 token=None
 def request(path,method='GET',body=None,expected=200):
  data=None if body is None else json.dumps(body).encode()

@@ -15,6 +15,8 @@ stages:
    steps:
    - task: JavaToolInstaller@0
      inputs: {versionSpec: '17', jdkArchitectureOption: x64, jdkSourceOption: PreInstalled}
+   - script: python3 -m unittest discover -s scripts/tests -v
+     displayName: Verify release promotion and rollback
    - task: Maven@4
      inputs:
       mavenPomFile: backend/pom.xml
@@ -46,7 +48,7 @@ stages:
  - job: Bundle
    pool: {vmImage: ubuntu-latest}
    steps:
-   - script: tar --exclude=.git -czf "$(Build.ArtifactStagingDirectory)/taskflow.tar.gz" .
+   - script: git archive --format=tar.gz --output="$(Build.ArtifactStagingDirectory)/taskflow.tar.gz" HEAD
      displayName: Package deployment source
    - publish: '$(Build.ArtifactStagingDirectory)/taskflow.tar.gz'
      artifact: release
