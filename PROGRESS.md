@@ -26,6 +26,16 @@ Local implementation and deployment verification are complete as of 17 October 2
 
 Earlier browser runs found selector issues and intermittent slow requests while image builds were active. The selectors were corrected; the final full suite passed against the warm, stable deployment without increasing assertion timeouts. Test process cleanup now stops child services correctly.
 
+## GitHub publication complete
+
+On 19 October 2026, the user authorized a **public** repository under `Sachit23`. [Sachit23/TaskFlow](https://github.com/Sachit23/TaskFlow) was created, and the completed `develop` branch was pushed with its reachable Git history. GitHub's default branch is `develop`; its initial published commit was verified against local commit `7a9c04146e212bb2c1686dbeff65b77d4554c071`.
+
+The local remote `github` points to `https://github.com/Sachit23/TaskFlow.git`, and local `develop` now tracks `github/develop`, so ordinary pull/push commands use GitHub. The original Azure remote `origin` was retained. Push explicitly to `origin develop` when updating the Azure copy. The publication handoff documentation is pushed to both copies.
+
+Azure pipeline 8 still reads the Azure Repos repository. GitHub pushes do not automatically synchronize Azure or run that pipeline; no GitHub Actions workflow or automatic cross-host synchronization has been configured. Azure builds 64 and 65 remain the last verified application runs. Hosting is not deployed. The user is considering local Minikube with a public tunnel as an alternative to an Oracle/K3s VM, with a strict zero-spend requirement; neither route has been installed or provisioned.
+
+Before publication, 287 historical blobs reachable from `develop` were checked for sensitive filenames and common GitHub/AWS token and private-key formats, with no matches. This was a limited pattern check, not a guarantee that every possible secret format was detected. Unstaged user-owned `.DS_Store` edits remain local. GitHub CLI was downloaded from its official release, its SHA-256 verified, and authenticated through GitHub's browser/device flow; no tokens were put in source files or chat.
+
 ## Azure Repos integration complete
 
 The user refreshed Git authentication on 18 October 2026. Azure Repos `origin` points to `CaseStudy2026/TaskFlow`; its default branch is `develop`. Following the user's explicit approval, PR 7 was merged with a merge commit, preserving the implementation history and source branch. The merge commit is `16a30b2296c8dbc9b50e2470be1c2817dd2ee23a`. Local `develop` was fast-forwarded to Azure and now tracks `origin/develop`. The user's unstaged `.DS_Store` edits were preserved. The `main` branch remains unchanged.
@@ -74,7 +84,7 @@ A normal local deployment uses `python3 scripts/setup.py` and `docker compose up
 
 ## Repository / environment
 
-- Repository: `/Users/kartik/Desktop/Task Management/TaskFlow`; active branch `develop`, tracking `origin/develop`. The source branch `feature/kubernetes-integration` was retained after PR 7's merge.
+- Repository: `/Users/kartik/Desktop/Task Management/TaskFlow`; active branch `develop`, tracking `github/develop`. Azure remains remote `origin`. The source branch `feature/kubernetes-integration` was retained after PR 7's merge.
 - Java 17: `/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home`. Maven otherwise defaults to Java 25 on this Mac.
 - System Node is 18.15. Temporary Node 22 for verification: `/tmp/taskflow-tools/node_modules/node/bin/node`. Docker and CI use Node 22.
 - Local Chrome testing uses `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'`. CI installs its matching Playwright Chromium.

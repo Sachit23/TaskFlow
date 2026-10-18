@@ -13,6 +13,8 @@ The application and PostgreSQL deployment have been verified locally. Public hos
 Install Docker Desktop, or Docker Engine with Compose v2, and start it. From the repository root:
 
 ```sh
+git clone https://github.com/Sachit23/TaskFlow.git
+cd TaskFlow
 python3 scripts/setup.py
 docker compose up -d --build --wait --wait-timeout 300
 python3 scripts/smoke.py http://localhost:8088 --wait-seconds 60
@@ -61,6 +63,8 @@ TASKFLOW_BASE_URL=http://127.0.0.1:8088 npm run test:e2e
 ```
 
 Verification includes 24 backend tests, 3 frontend utility tests, 9 deployment/infrastructure checks, and 4 browser workflows. The real PostgreSQL stack also passed a complete restart and a two-database backup/restore check.
+
+The default GitHub branch is `develop`. Azure DevOps CI remains connected to the Azure Repos copy; pushing only to GitHub does not trigger that pipeline. GitHub Actions is not configured yet.
 
 ## Architecture
 
