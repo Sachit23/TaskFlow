@@ -26,11 +26,11 @@ Local implementation and deployment verification are complete as of 17 October 2
 
 Earlier browser runs found selector issues and intermittent slow requests while image builds were active. The selectors were corrected; the final full suite passed against the warm, stable deployment without increasing assertion timeouts. Test process cleanup now stops child services correctly.
 
-## Current step: review the Azure Repos pull request
+## Current step: verify the merged develop branch
 
-The user refreshed Git authentication on 18 October 2026. Azure Repos `origin` points to `CaseStudy2026/TaskFlow`; its default branch is `develop`. The completed feature branch was pushed without force and its remote commit was verified as `dd1bd6d06d2bec0647af80a87af508a338345139`. Local and remote tracking were configured and showed zero commits ahead/behind. The shared `develop` and `main` branches remain unchanged; a pull request into `develop` is a separate next step.
+The user refreshed Git authentication on 18 October 2026. Azure Repos `origin` points to `CaseStudy2026/TaskFlow`; its default branch is `develop`. Following the user's explicit approval, PR 7 was merged with a merge commit, preserving the implementation history and source branch. The merge commit is `16a30b2296c8dbc9b50e2470be1c2817dd2ee23a`. Local `develop` was fast-forwarded to Azure and now tracks `origin/develop`. The user's unstaged `.DS_Store` edits were preserved. The `main` branch remains unchanged.
 
-The canonical pipeline now includes feature-branch CI triggers, and its stage indentation was corrected and parsed with Ruby/Psych. All nine deployment/infrastructure checks passed again. Azure pipeline **8 (`TaskFlow-Git-CI`)** was updated to `azure-pipelines.yml`, with its default build branch set to the current feature branch. Existing secret variables were preserved from the previous definition revision. Obsolete pipelines 5, 6, and 7 were disabled, retaining their history; pipelines 1–4 were already disabled.
+The canonical pipeline includes feature-branch CI triggers, and its stage indentation was corrected and parsed with Ruby/Psych. All nine deployment/infrastructure checks passed again. Azure pipeline **8 (`TaskFlow-Git-CI`)** uses `azure-pipelines.yml` and now defaults to `develop`. Existing secret variables were preserved from the previous definition revision. Obsolete pipelines 5, 6, and 7 were disabled, retaining their history; pipelines 1–4 were already disabled.
 
 Remote verification [build 64](https://dev.azure.com/CaseStudy2026/TaskFlow/_build/results?buildId=64) **completed successfully** for `dd1bd6d` on Microsoft-hosted agents. The Browser, Java, and Bundle jobs all passed, including production-container browser checks, backend/deployment tests, and release packaging. See [deployment/README.md](deployment/README.md#azure-devops-pipeline) for Azure Repos build-validation policies. Subsequent status-only checkpoints use `[skip ci]` to avoid queuing a duplicate full build.
 
@@ -38,7 +38,7 @@ Remote verification [build 64](https://dev.azure.com/CaseStudy2026/TaskFlow/_bui
 
 The user resumed work on 18 October 2026. Git fetch confirmed that the feature branch remains synchronized and that `develop` has no new commits outside the feature branch's ancestry. Build 64 was confirmed successful, with `backend-coverage` and `release` artifacts published. The release archive was downloaded from Microsoft's artifact service and inspected without extracting it: all 130 files match `git archive dd1bd6d` by path and SHA-256 content hash; no links, traversal paths, `.git`, or local `.env` entries were present. Only documentation changed after the tested code commit.
 
-[Pull request 7](https://dev.azure.com/CaseStudy2026/TaskFlow/_git/TaskFlow/pullrequest/7) is open from `feature/kubernetes-integration` into `develop`, with the implementation, verification evidence, and deployment boundaries documented. No active PR existed before creation, and no enabled branch policies were returned by the account. The PR has not been merged; no shared target branch was changed. Next, review/complete this PR, switch the pipeline's default build branch to `develop` after the merge, and verify the resulting branch build before starting hosting work. Oracle provisioning and Kubernetes changes remain deferred.
+[Pull request 7](https://dev.azure.com/CaseStudy2026/TaskFlow/_git/TaskFlow/pullrequest/7) is completed. No active PR existed before creation, and no enabled branch policies were returned by the account. [Build 65](https://dev.azure.com/CaseStudy2026/TaskFlow/_build/results?buildId=65) is verifying the merged `develop` commit. The merged tree matches the reviewed source branch. Oracle provisioning and Kubernetes changes remain deferred until this synchronization step is complete.
 
 CI reported nonblocking warnings: `NodeTool@0` is deprecated in favor of `UseNode@1`, and `ubuntu-latest` is scheduled to move to Ubuntu 26. Consider pinning a reviewed agent image on the next pipeline maintenance pass. The unused optional Azure deployment-stage fragment also has indentation issues to correct and validate before enabling it; it is not part of the running canonical verification pipeline.
 
@@ -72,7 +72,7 @@ A normal local deployment uses `python3 scripts/setup.py` and `docker compose up
 
 ## Repository / environment
 
-- Repository: `/Users/kartik/Desktop/Task Management/TaskFlow`; branch `feature/kubernetes-integration`.
+- Repository: `/Users/kartik/Desktop/Task Management/TaskFlow`; active branch `develop`, tracking `origin/develop`. The source branch `feature/kubernetes-integration` was retained after PR 7's merge.
 - Java 17: `/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home`. Maven otherwise defaults to Java 25 on this Mac.
 - System Node is 18.15. Temporary Node 22 for verification: `/tmp/taskflow-tools/node_modules/node/bin/node`. Docker and CI use Node 22.
 - Local Chrome testing uses `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'`. CI installs its matching Playwright Chromium.
