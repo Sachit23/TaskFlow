@@ -1,0 +1,12 @@
+**/node_modules
+**/target
+**/dist
+**/.DS_Store
+.git
+.env
+.env.*
+.local-data
+.local-logs
+backups
+frontend/test-results
+frontend/playwright-report

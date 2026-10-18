@@ -1,0 +1,36 @@
+# Append this stage to azure-pipelines.yml after configuring the TaskFlow-SSH
+# service connection and taskflow-production environment in Azure DevOps.
+- stage: Deploy
+ dependsOn: Package
+ condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+ jobs:
+ - deployment: Production
+   environment: taskflow-production
+   pool: {vmImage: ubuntu-latest}
+   strategy:
+    runOnce:
+     deploy:
+      steps:
+      - checkout: self
+      - download: current
+        artifact: release
+      - task: CopyFilesOverSSH@0
+        inputs:
+         sshEndpoint: TaskFlow-SSH
+         sourceFolder: '$(Pipeline.Workspace)/release'
+         contents: taskflow.tar.gz
+         targetFolder: /opt/taskflow
+      - task: SSH@0
+        inputs:
+         sshEndpoint: TaskFlow-SSH
+         runOptions: inline
+         inline: |
+          set -eu
+          cd /opt/taskflow
+          bootstrap_dir="$(mktemp -d)"
+          trap 'rm -rf "$bootstrap_dir"' EXIT
+          tar -xzf taskflow.tar.gz -C "$bootstrap_dir" scripts/release.sh
+          sudo bash "$bootstrap_dir/scripts/release.sh" /opt/taskflow/taskflow.tar.gz /opt/taskflow
+         failOnStdErr: false
+      - script: python3 scripts/smoke.py "$(TASKFLOW_PUBLIC_URL)" --wait-seconds 180
+        displayName: Verify deployed app

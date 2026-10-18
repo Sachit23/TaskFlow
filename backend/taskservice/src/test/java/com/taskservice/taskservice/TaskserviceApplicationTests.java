@@ -1,13 +1,33 @@
-// package com.taskservice.taskservice;
-
-// import org.junit.jupiter.api.Test;
-// import org.springframework.boot.test.context.SpringBootTest;
-
-// @SpringBootTest
-// class TaskserviceApplicationTests {
-
-// 	@Test
-// 	void contextLoads() {
-// 	}
-
-// }
+package com.taskservice.taskservice;
+import com.fasterxml.jackson.databind.*;
+import com.taskservice.taskservice.service.UserClient;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.*;
+import org.springframework.http.*;
+import org.springframework.web.server.ResponseStatusException;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+@SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:tasks;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1","spring.datasource.username=sa","spring.datasource.password="})
+@AutoConfigureMockMvc
+class TaskserviceApplicationTests {
+ @Autowired MockMvc mvc;@Autowired ObjectMapper mapper;@MockitoBean UserClient users;
+ @BeforeEach void identities(){when(users.authenticate(any())).thenAnswer(i->{String auth=i.getArgument(0);if(auth==null)throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Please sign in.");return new UserClient.Identity(auth.equals("Bearer bob")?2L:1L,"Alex Morgan","alex@example.com");});}
+ JsonNode create(String extra)throws Exception{return mapper.readTree(mvc.perform(post("/api/tasks").header("Authorization","Bearer alex").contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"Ship something useful\",\"priority\":\"HIGH\""+extra+"}")).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());}
+ JsonNode project()throws Exception{return mapper.readTree(mvc.perform(post("/api/projects").header("Authorization","Bearer alex").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Launch\",\"description\":\"The next step\",\"color\":\"#0c6b58\",\"archived\":false}")).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());}
+ @Test void requiresAuthentication()throws Exception{mvc.perform(get("/api/tasks")).andExpect(status().isUnauthorized());}
+ @Test void taskCrudPreservesMetadataAndChecksVersion()throws Exception{var t=create("");long id=t.get("id").asLong();mvc.perform(get("/api/tasks/"+id).header("Authorization","Bearer alex")).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PENDING"));((com.fasterxml.jackson.databind.node.ObjectNode)t).put("status","COMPLETED");mvc.perform(put("/api/tasks/"+id).header("Authorization","Bearer alex").contentType(MediaType.APPLICATION_JSON).content(t.toString())).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"));mvc.perform(put("/api/tasks/"+id).header("Authorization","Bearer alex").contentType(MediaType.APPLICATION_JSON).content(t.toString())).andExpect(status().isConflict());mvc.perform(delete("/api/tasks/"+id).header("Authorization","Bearer alex")).andExpect(status().isNoContent());mvc.perform(get("/api/tasks/"+id).header("Authorization","Bearer alex")).andExpect(status().isNotFound());}
+ @Test void otherUsersCannotReadUpdateDeleteOrComment()throws Exception{var t=create("");String path="/api/tasks/"+t.get("id").asLong();mvc.perform(get(path).header("Authorization","Bearer bob")).andExpect(status().isNotFound());mvc.perform(put(path).header("Authorization","Bearer bob").contentType(MediaType.APPLICATION_JSON).content(t.toString())).andExpect(status().isNotFound());mvc.perform(delete(path).header("Authorization","Bearer bob")).andExpect(status().isNotFound());mvc.perform(get(path+"/comments").header("Authorization","Bearer bob")).andExpect(status().isNotFound());mvc.perform(post(path+"/comments").header("Authorization","Bearer bob").contentType(MediaType.APPLICATION_JSON).content("{\"body\":\"not yours\"}")).andExpect(status().isNotFound());}
+ @Test void listDoesNotLeakOtherUsersTasks()throws Exception{create("");mvc.perform(get("/api/tasks").header("Authorization","Bearer bob")).andExpect(status().isOk()).andExpect(content().json("[]"));}
+ @Test void cannotAssignTaskToAnotherUsersProject()throws Exception{var p=project();mvc.perform(post("/api/tasks").header("Authorization","Bearer bob").contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"No access\",\"priority\":\"HIGH\",\"projectId\":"+p.get("id").asLong()+"}")).andExpect(status().isNotFound());}
+ @Test void persistsChecklistLabelsAndComments()throws Exception{var t=create(",\"labels\":[\"Design\",\"Research\"],\"checklist\":[{\"id\":\"first\",\"title\":\"Make a plan\",\"done\":true}]");String path="/api/tasks/"+t.get("id").asLong();mvc.perform(get(path).header("Authorization","Bearer alex")).andExpect(jsonPath("$.labels[0]").value("Design")).andExpect(jsonPath("$.checklist[0].done").value(true));mvc.perform(post(path+"/comments").header("Authorization","Bearer alex").contentType(MediaType.APPLICATION_JSON).content("{\"body\":\"A useful note\"}")).andExpect(status().isCreated());mvc.perform(get(path+"/comments").header("Authorization","Bearer alex")).andExpect(jsonPath("$[0].body").value("A useful note"));}
+ @Test void projectDeletionRetainsTasks()throws Exception{var p=project();var t=create(",\"projectId\":"+p.get("id").asLong());mvc.perform(delete("/api/projects/"+p.get("id").asLong()).header("Authorization","Bearer alex")).andExpect(status().isNoContent());mvc.perform(get("/api/tasks/"+t.get("id").asLong()).header("Authorization","Bearer alex")).andExpect(status().isOk()).andExpect(jsonPath("$.projectId").isEmpty());}
+ @Test void archivedProjectRejectsNewTasks()throws Exception{var p=project();((com.fasterxml.jackson.databind.node.ObjectNode)p).put("archived",true);mvc.perform(put("/api/projects/"+p.get("id").asLong()).header("Authorization","Bearer alex").contentType(MediaType.APPLICATION_JSON).content(p.toString())).andExpect(status().isOk());mvc.perform(post("/api/tasks").header("Authorization","Bearer alex").contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"Cannot add\",\"priority\":\"HIGH\",\"projectId\":"+p.get("id").asLong()+"}")).andExpect(status().isConflict());}
+ @Test void errorsAreActionableAndValidationRejectsBadInput()throws Exception{mvc.perform(post("/api/tasks").header("Authorization","Bearer alex").contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"\",\"priority\":\"INVALID\"}")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").isString());}
+ @Test void taskActionsCreatePrivateActivity()throws Exception{create("");mvc.perform(get("/api/activity").header("Authorization","Bearer alex")).andExpect(status().isOk()).andExpect(jsonPath("$[0].action").exists());mvc.perform(get("/api/activity").header("Authorization","Bearer bob")).andExpect(content().json("[]"));}
+}

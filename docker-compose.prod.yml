@@ -1,53 +1,136 @@
-version: '3.8'
-
+name: taskflow
+x-logging: &logging
+ driver: json-file
+ options:
+  max-size: "10m"
+  max-file: "3"
 services:
-
-  userdb:
-    image: postgres:15
-    container_name: userdb
-    environment:
-      POSTGRES_DB: users
-      POSTGRES_USER: ${USER_DB_USERNAME}
-      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
-    ports:
-      - "5433:5432"
-
-  taskdb:
-    image: postgres:15
-    container_name: taskdb
-    environment:
-      POSTGRES_DB: tasks
-      POSTGRES_USER: ${TASK_DB_USERNAME}
-      POSTGRES_PASSWORD: ${TASK_DB_PASSWORD}
-    ports:
-      - "5434:5432"
-
-  userservice:
-    build:
-      image: casestudy2026acr.azurecr.io/userservice:44
-    container_name: userservice
-    env_file: .env
-    environment:
-      SPRING_DATASOURCE_URL: ${USER_DB_URL}
-      SPRING_DATASOURCE_USERNAME: ${USER_DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${USER_DB_PASSWORD}
-    depends_on:
-      - userdb
-    ports:
-      - "8080:8080"
-
-  taskservice:
-    build:
-      image: casestudy2026acr.azurecr.io/taskservice:44
-    container_name: taskservice
-    env_file: .env
-    environment:
-      SPRING_DATASOURCE_URL: ${TASK_DB_URL}
-      SPRING_DATASOURCE_USERNAME: ${TASK_DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${TASK_DB_PASSWORD}
-      USERSERVICE_URL: ${USERSERVICE_URL}
-    depends_on:
-      - taskdb
-      - userservice
-    ports:
-      - "8081:8081"
+ userdb:
+  image: postgres:17-alpine
+  restart: unless-stopped
+  environment:
+   POSTGRES_DB: users
+   POSTGRES_USER: ${USER_DB_USERNAME:-taskflow}
+   POSTGRES_PASSWORD: ${USER_DB_PASSWORD:?Run python3 scripts/setup.py first}
+  volumes: [userdb_data:/var/lib/postgresql/data]
+  networks: [internal]
+  healthcheck:
+   test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+   interval: 5s
+   timeout: 3s
+   retries: 15
+  logging: *logging
+ taskdb:
+  image: postgres:17-alpine
+  restart: unless-stopped
+  environment:
+   POSTGRES_DB: tasks
+   POSTGRES_USER: ${TASK_DB_USERNAME:-taskflow}
+   POSTGRES_PASSWORD: ${TASK_DB_PASSWORD:?Run python3 scripts/setup.py first}
+  volumes: [taskdb_data:/var/lib/postgresql/data]
+  networks: [internal]
+  healthcheck:
+   test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+   interval: 5s
+   timeout: 3s
+   retries: 15
+  logging: *logging
+ userservice:
+  build:
+   context: .
+   dockerfile: backend/Dockerfile
+   args: {SERVICE: userservice}
+  image: ${IMAGE_PREFIX:-taskflow}/userservice:${IMAGE_TAG:-local}
+  restart: unless-stopped
+  environment:
+   USER_DB_URL: jdbc:postgresql://userdb:5432/users
+   USER_DB_USERNAME: ${USER_DB_USERNAME:-taskflow}
+   USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+  depends_on:
+   userdb: {condition: service_healthy}
+  networks: [internal]
+  mem_limit: 640m
+  security_opt: [no-new-privileges:true]
+  healthcheck:
+   test: [CMD, curl, -fsS, http://localhost:8080/actuator/health/readiness]
+   interval: 15s
+   timeout: 5s
+   start_period: 90s
+   retries: 10
+  logging: *logging
+ taskservice:
+  build:
+   context: .
+   dockerfile: backend/Dockerfile
+   args: {SERVICE: taskservice}
+  image: ${IMAGE_PREFIX:-taskflow}/taskservice:${IMAGE_TAG:-local}
+  restart: unless-stopped
+  environment:
+   TASK_DB_URL: jdbc:postgresql://taskdb:5432/tasks
+   TASK_DB_USERNAME: ${TASK_DB_USERNAME:-taskflow}
+   TASK_DB_PASSWORD: ${TASK_DB_PASSWORD}
+   USERSERVICE_URL: http://userservice:8080
+  depends_on:
+   taskdb: {condition: service_healthy}
+   userservice: {condition: service_healthy}
+  networks: [internal]
+  mem_limit: 640m
+  security_opt: [no-new-privileges:true]
+  healthcheck:
+   test: [CMD, curl, -fsS, http://localhost:8081/actuator/health/readiness]
+   interval: 15s
+   timeout: 5s
+   start_period: 90s
+   retries: 10
+  logging: *logging
+ apigateway:
+  build:
+   context: .
+   dockerfile: backend/Dockerfile
+   args: {SERVICE: apigateway}
+  image: ${IMAGE_PREFIX:-taskflow}/apigateway:${IMAGE_TAG:-local}
+  restart: unless-stopped
+  environment:
+   USERSERVICE_URL: http://userservice:8080
+   TASKSERVICE_URL: http://taskservice:8081
+  depends_on:
+   userservice: {condition: service_healthy}
+   taskservice: {condition: service_healthy}
+  networks: [internal]
+  mem_limit: 384m
+  security_opt: [no-new-privileges:true]
+  healthcheck:
+   test: [CMD, curl, -fsS, http://localhost:8090/actuator/health/readiness]
+   interval: 15s
+   timeout: 5s
+   start_period: 60s
+   retries: 10
+  logging: *logging
+ web:
+  build:
+   context: .
+   dockerfile: frontend/Dockerfile
+  image: ${IMAGE_PREFIX:-taskflow}/web:${IMAGE_TAG:-local}
+  restart: unless-stopped
+  environment:
+   PUBLIC_ADDRESS: ${PUBLIC_ADDRESS:?Set PUBLIC_ADDRESS to your public hostname}
+  ports: ["80:80", "443:443", "443:443/udp"]
+  volumes: [caddy_data:/data, caddy_config:/config]
+  depends_on:
+   apigateway: {condition: service_healthy}
+  networks: [internal, public]
+  healthcheck:
+   test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:2019/config/']
+   interval: 20s
+   timeout: 5s
+   retries: 5
+  logging: *logging
+networks:
+ internal:
+  internal: true
+ public:
+volumes:
+ userdb_data:
+ taskdb_data:
+ caddy_data:
+ caddy_config:

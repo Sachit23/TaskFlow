@@ -1,0 +1,113 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "apigateway"
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "apigateway"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "apigateway"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "apigateway",
+                "image": "taskflow/apigateway:local",
+                "imagePullPolicy": "IfNotPresent",
+                "ports": [
+                  {
+                    "containerPort": 8090
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "USERSERVICE_URL",
+                    "value": "http://userservice:8080"
+                  },
+                  {
+                    "name": "TASKSERVICE_URL",
+                    "value": "http://taskservice:8081"
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "256Mi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "768Mi"
+                  }
+                },
+                "startupProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": 8090
+                  },
+                  "failureThreshold": 60,
+                  "periodSeconds": 5
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/readiness",
+                    "port": 8090
+                  },
+                  "periodSeconds": 10
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/actuator/health/liveness",
+                    "port": 8090
+                  },
+                  "periodSeconds": 20
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "runAsNonRoot": true,
+                  "runAsUser": 10001
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "apigateway"
+      },
+      "spec": {
+        "selector": {
+          "app": "apigateway"
+        },
+        "ports": [
+          {
+            "port": 8090,
+            "targetPort": 8090
+          }
+        ],
+        "type": "ClusterIP"
+      }
+    }
+  ]
+}
