@@ -10,7 +10,7 @@ The application and PostgreSQL deployment have been verified locally. Public hos
 
 ## Start with Docker
 
-Install Docker Desktop, or Docker Engine with Compose v2, and start it. From the repository root:
+Install Docker Desktop, or Docker Engine with Compose v2, and start it. For a fresh checkout:
 
 ```sh
 git clone https://github.com/Sachit23/TaskFlow.git
