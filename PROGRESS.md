@@ -26,7 +26,7 @@ Local implementation and deployment verification are complete as of 17 October 2
 
 Earlier browser runs found selector issues and intermittent slow requests while image builds were active. The selectors were corrected; the final full suite passed against the warm, stable deployment without increasing assertion timeouts. Test process cleanup now stops child services correctly.
 
-## Current step: Azure Repos synchronization
+## Current step: review the Azure Repos pull request
 
 The user refreshed Git authentication on 18 October 2026. Azure Repos `origin` points to `CaseStudy2026/TaskFlow`; its default branch is `develop`. The completed feature branch was pushed without force and its remote commit was verified as `dd1bd6d06d2bec0647af80a87af508a338345139`. Local and remote tracking were configured and showed zero commits ahead/behind. The shared `develop` and `main` branches remain unchanged; a pull request into `develop` is a separate next step.
 
@@ -34,9 +34,11 @@ The canonical pipeline now includes feature-branch CI triggers, and its stage in
 
 Remote verification [build 64](https://dev.azure.com/CaseStudy2026/TaskFlow/_build/results?buildId=64) **completed successfully** for `dd1bd6d` on Microsoft-hosted agents. The Browser, Java, and Bundle jobs all passed, including production-container browser checks, backend/deployment tests, and release packaging. See [deployment/README.md](deployment/README.md#azure-devops-pipeline) for Azure Repos build-validation policies. Subsequent status-only checkpoints use `[skip ci]` to avoid queuing a duplicate full build.
 
-### Paused at the user's request
+### Resumed: release artifact and merge review
 
-Repository synchronization and pipeline configuration are saved, with a successful remote verification run. Resume by reviewing the release artifact and a pull request from `feature/kubernetes-integration` into `develop`. No PR or merge has been performed. Hosting, Oracle provisioning, and Kubernetes changes remain deferred.
+The user resumed work on 18 October 2026. Git fetch confirmed that the feature branch remains synchronized and that `develop` has no new commits outside the feature branch's ancestry. Build 64 was confirmed successful, with `backend-coverage` and `release` artifacts published. The release archive was downloaded from Microsoft's artifact service and inspected without extracting it: all 130 files match `git archive dd1bd6d` by path and SHA-256 content hash; no links, traversal paths, `.git`, or local `.env` entries were present. Only documentation changed after the tested code commit.
+
+[Pull request 7](https://dev.azure.com/CaseStudy2026/TaskFlow/_git/TaskFlow/pullrequest/7) is open from `feature/kubernetes-integration` into `develop`, with the implementation, verification evidence, and deployment boundaries documented. No active PR existed before creation, and no enabled branch policies were returned by the account. The PR has not been merged; no shared target branch was changed. Next, review/complete this PR, switch the pipeline's default build branch to `develop` after the merge, and verify the resulting branch build before starting hosting work. Oracle provisioning and Kubernetes changes remain deferred.
 
 CI reported nonblocking warnings: `NodeTool@0` is deprecated in favor of `UseNode@1`, and `ubuntu-latest` is scheduled to move to Ubuntu 26. Consider pinning a reviewed agent image on the next pipeline maintenance pass. The unused optional Azure deployment-stage fragment also has indentation issues to correct and validate before enabling it; it is not part of the running canonical verification pipeline.
 
