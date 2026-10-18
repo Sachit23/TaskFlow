@@ -1,6 +1,6 @@
 # Deploying TaskFlow
 
-The Docker/PostgreSQL stack, all browser workflows, restart persistence, and backup/restoration have been tested locally. Azure DevOps build 64 passed verification and release packaging; the completed application is merged into `develop`, with build 65 checking that merge. Hosting and production delivery have not been configured. [Verification details](../PROGRESS.md).
+The Docker/PostgreSQL stack, all browser workflows, restart persistence, and backup/restoration have been tested locally. Azure DevOps builds 64 and 65 passed verification and release packaging, including the completed application's merge into `develop`. Hosting and production delivery have not been configured. [Verification details](../PROGRESS.md).
 
 ## Any Linux server
 

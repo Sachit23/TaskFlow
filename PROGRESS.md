@@ -26,7 +26,7 @@ Local implementation and deployment verification are complete as of 17 October 2
 
 Earlier browser runs found selector issues and intermittent slow requests while image builds were active. The selectors were corrected; the final full suite passed against the warm, stable deployment without increasing assertion timeouts. Test process cleanup now stops child services correctly.
 
-## Current step: verify the merged develop branch
+## Azure Repos integration complete
 
 The user refreshed Git authentication on 18 October 2026. Azure Repos `origin` points to `CaseStudy2026/TaskFlow`; its default branch is `develop`. Following the user's explicit approval, PR 7 was merged with a merge commit, preserving the implementation history and source branch. The merge commit is `16a30b2296c8dbc9b50e2470be1c2817dd2ee23a`. Local `develop` was fast-forwarded to Azure and now tracks `origin/develop`. The user's unstaged `.DS_Store` edits were preserved. The `main` branch remains unchanged.
 
@@ -38,7 +38,9 @@ Remote verification [build 64](https://dev.azure.com/CaseStudy2026/TaskFlow/_bui
 
 The user resumed work on 18 October 2026. Git fetch confirmed that the feature branch remains synchronized and that `develop` has no new commits outside the feature branch's ancestry. Build 64 was confirmed successful, with `backend-coverage` and `release` artifacts published. The release archive was downloaded from Microsoft's artifact service and inspected without extracting it: all 130 files match `git archive dd1bd6d` by path and SHA-256 content hash; no links, traversal paths, `.git`, or local `.env` entries were present. Only documentation changed after the tested code commit.
 
-[Pull request 7](https://dev.azure.com/CaseStudy2026/TaskFlow/_git/TaskFlow/pullrequest/7) is completed. No active PR existed before creation, and no enabled branch policies were returned by the account. [Build 65](https://dev.azure.com/CaseStudy2026/TaskFlow/_build/results?buildId=65) is verifying the merged `develop` commit. The merged tree matches the reviewed source branch. Oracle provisioning and Kubernetes changes remain deferred until this synchronization step is complete.
+[Pull request 7](https://dev.azure.com/CaseStudy2026/TaskFlow/_git/TaskFlow/pullrequest/7) is completed. No active PR existed before creation, and no enabled branch policies were returned by the account. **[Build 65](https://dev.azure.com/CaseStudy2026/TaskFlow/_build/results?buildId=65) succeeded** for the merged `develop` commit: Java, Browser, and Bundle jobs all passed. The merged tree matches the reviewed source branch; subsequent changes only update the handoff documentation and use `[skip ci]`. Local and Azure `develop` are synchronized.
+
+The user's requested code/pipeline synchronization is complete. Next is the deferred public-hosting work: obtain an eligible Oracle Always Free ARM VM, prepare the K3s/Traefik deployment configuration and ARM image publishing, then verify a real cluster and public HTTPS. No cloud resources have been provisioned.
 
 CI reported nonblocking warnings: `NodeTool@0` is deprecated in favor of `UseNode@1`, and `ubuntu-latest` is scheduled to move to Ubuntu 26. Consider pinning a reviewed agent image on the next pipeline maintenance pass. The unused optional Azure deployment-stage fragment also has indentation issues to correct and validate before enabling it; it is not part of the running canonical verification pipeline.
 
